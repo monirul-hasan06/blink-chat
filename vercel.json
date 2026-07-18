@@ -1,9 +1,11 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "npm ci --ignore-scripts --no-audit --no-fund",
+  "buildCommand": "npm run build",
   "crons": [
     {
       "path": "/api/cron/cleanup",
       "schedule": "0 3 * * *"
     }
-  ],
-  "installCommand": "npm ci --ignore-scripts --no-audit --no-fund"
+  ]
 }
