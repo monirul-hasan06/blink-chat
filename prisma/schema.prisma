@@ -1,0 +1,36 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  username     String    @unique @db.VarChar(20)
+  pinHash      String
+  createdAt    DateTime  @default(now())
+  lastActiveAt DateTime  @default(now())
+  sentMessages Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+
+  @@index([lastActiveAt])
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  body       String   @db.VarChar(1000)
+  createdAt  DateTime @default(now())
+  seenAt     DateTime?
+  expiresAt  DateTime?
+  senderId   String
+  receiverId String
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, receiverId, createdAt])
+  @@index([receiverId, seenAt])
+  @@index([expiresAt])
+}
