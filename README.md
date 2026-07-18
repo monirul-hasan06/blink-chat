@@ -27,12 +27,12 @@ Blink is a small, mobile-first, text-only private messaging app.
 
 ## Run locally
 
-1. Install Node.js 20 or newer.
+1. Install Node.js 22.
 2. Open the project in VS Code.
 3. Install dependencies:
 
 ```bash
-npm install
+npm ci
 ```
 
 4. Copy the environment file:
@@ -87,6 +87,16 @@ git push -u origin main
 
 5. Before the first deployment, run `npm run db:push` locally with the production database URL, or use a Prisma migration workflow.
 6. Deploy. The included `vercel.json` runs cleanup once each day.
+
+## Vercel install fix
+
+This project forces dependency downloads through the public npm registry and uses a clean, script-free install on Vercel:
+
+```bash
+npm ci --ignore-scripts --no-audit --no-fund
+```
+
+Prisma Client generation runs afterward as part of `npm run build`. This avoids npm becoming stuck inside Prisma install-time hooks. If the Vercel project has a dashboard-level Install Command override, remove it or set it to the command above, then redeploy without using the previous build cache.
 
 ## Message deletion behavior
 
