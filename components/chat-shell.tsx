@@ -159,8 +159,8 @@ function InitialBadge({ label, small = false, group = false }: { label: string; 
   return (
     <div className={`relative grid shrink-0 place-items-center rounded-2xl border font-semibold uppercase ${
       group
-        ? "border-sky-300/20 bg-sky-300/10 text-sky-100"
-        : "border-[#8cffaa]/20 bg-[#8cffaa]/10 text-[#b9ffc9]"
+        ? "border-group bg-group-soft text-group"
+        : "border-accent bg-accent-soft text-accent"
     } ${small ? "size-10 text-sm" : "size-12 text-base"}`}>
       {group ? <Users size={small ? 17 : 20} /> : label.slice(0, 2)}
     </div>
@@ -168,16 +168,16 @@ function InitialBadge({ label, small = false, group = false }: { label: string; 
 }
 
 function PresenceDot({ online }: { online?: boolean }) {
-  return <span className={`inline-block size-2 rounded-full ${online ? "bg-[#8cffaa]" : "bg-white/20"}`} />;
+  return <span className={`inline-block size-2 rounded-full ${online ? "bg-accent" : "bg-offline"}`} />;
 }
 
 function Modal({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 grid place-items-end bg-black/65 p-0 backdrop-blur-sm sm:place-items-center sm:p-5" onMouseDown={onClose}>
-      <div className="safe-bottom glass w-full max-w-md rounded-t-[2rem] border-white/10 p-5 sm:rounded-[2rem]" onMouseDown={(event) => event.stopPropagation()}>
+    <div className="fixed inset-0 z-50 grid place-items-end bg-overlay p-0 backdrop-blur-sm sm:place-items-center sm:p-5" onMouseDown={onClose}>
+      <div className="safe-bottom glass w-full max-w-md rounded-t-[2rem] border-theme p-5 sm:rounded-[2rem]" onMouseDown={(event) => event.stopPropagation()}>
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-base font-semibold">{title}</h2>
-          <button type="button" onClick={onClose} className="rounded-xl p-2 text-white/45 hover:bg-white/5 hover:text-white" aria-label="Close">
+          <button type="button" onClick={onClose} className="rounded-xl p-2 text-muted hover-surface hover-text-main" aria-label="Close">
             <X size={18} />
           </button>
         </div>
@@ -257,7 +257,7 @@ export function ChatShell({ currentUser }: { currentUser: UserSummary }) {
     setTheme(nextTheme);
     document.documentElement.dataset.theme = nextTheme;
     document.documentElement.style.colorScheme = nextTheme;
-    document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute("content", nextTheme === "light" ? "#eef7f1" : "#07110d");
+    document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute("content", nextTheme === "light" ? "#edf5ef" : "#07110d");
     window.localStorage.setItem("blink-theme", nextTheme);
   }, []);
 
@@ -389,7 +389,7 @@ export function ChatShell({ currentUser }: { currentUser: UserSummary }) {
     setTheme(initialTheme);
     document.documentElement.dataset.theme = initialTheme;
     document.documentElement.style.colorScheme = initialTheme;
-    document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute("content", initialTheme === "light" ? "#eef7f1" : "#07110d");
+    document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute("content", initialTheme === "light" ? "#edf5ef" : "#07110d");
   }, []);
 
   useEffect(() => {
@@ -1022,89 +1022,89 @@ export function ChatShell({ currentUser }: { currentUser: UserSummary }) {
             setPushNotice(null);
             window.location.assign(url);
           }}
-          className="safe-top fixed left-3 right-3 top-3 z-[70] mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-[#8cffaa]/25 bg-[#102019]/95 px-4 py-3 text-left shadow-2xl backdrop-blur-xl md:left-auto md:right-6 md:top-6 md:w-[380px]"
+          className="safe-top fixed left-3 right-3 top-3 z-[70] mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-accent bg-panel-solid px-4 py-3 text-left shadow-2xl backdrop-blur-xl md:left-auto md:right-6 md:top-6 md:w-[380px]"
         >
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#8cffaa] text-[#07110d]"><BellRing size={18} /></span>
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent text-on-accent"><BellRing size={18} /></span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-semibold">{pushNotice.title}</span>
-            <span className="mt-0.5 block truncate text-xs text-white/55">{pushNotice.body}</span>
+            <span className="mt-0.5 block truncate text-xs text-muted">{pushNotice.body}</span>
           </span>
-          <X size={16} className="shrink-0 text-white/35" />
+          <X size={16} className="shrink-0 text-muted" />
         </button>
       )}
       <div className="glass mx-auto flex h-full max-w-7xl overflow-hidden md:rounded-[2rem]">
-        <aside className={`${selected ? "hidden md:flex" : "flex"} w-full shrink-0 flex-col border-white/10 md:w-[380px] md:border-r`}>
-          <div className="safe-top border-b border-white/10 px-4 pb-3 pt-4 md:px-5">
+        <aside className={`${selected ? "hidden md:flex" : "flex"} w-full shrink-0 flex-col border-theme md:w-[380px] md:border-r`}>
+          <div className="safe-top border-b border-theme px-4 pb-3 pt-4 md:px-5">
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="grid size-10 shrink-0 place-items-center rounded-2xl bg-[#8cffaa] font-black text-[#07110d]">B</div>
+                <div className="grid size-10 shrink-0 place-items-center rounded-2xl bg-accent font-black text-on-accent">B</div>
                 <div className="min-w-0">
                   <div className="font-semibold">Blink</div>
-                  <div className="truncate text-xs text-white/35">@{currentUser.username}</div>
+                  <div className="truncate text-xs text-muted">@{currentUser.username}</div>
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <button type="button" onClick={enableNotifications} aria-label={notificationsLabel} title={notificationsLabel} className="rounded-xl p-2.5 text-white/50 hover:bg-white/5 hover:text-white">
-                  {notificationState === "enabled" ? <BellRing size={18} className="text-[#8cffaa]" /> : <Bell size={18} />}
+                <button type="button" onClick={enableNotifications} aria-label={notificationsLabel} title={notificationsLabel} className="rounded-xl p-2.5 text-muted hover-surface hover-text-main">
+                  {notificationState === "enabled" ? <BellRing size={18} className="text-accent" /> : <Bell size={18} />}
                 </button>
-                <button type="button" onClick={() => setCreateGroupOpen(true)} aria-label="Create group" className="rounded-xl p-2.5 text-white/50 hover:bg-white/5 hover:text-white">
+                <button type="button" onClick={() => setCreateGroupOpen(true)} aria-label="Create group" className="rounded-xl p-2.5 text-muted hover-surface hover-text-main">
                   <Plus size={19} />
                 </button>
-                <button type="button" onClick={() => setSettingsOpen(true)} aria-label="Settings" className="rounded-xl p-2.5 text-white/50 hover:bg-white/5 hover:text-white">
+                <button type="button" onClick={() => setSettingsOpen(true)} aria-label="Settings" className="rounded-xl p-2.5 text-muted hover-surface hover-text-main">
                   <Settings size={18} />
                 </button>
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-3 gap-1 rounded-2xl border border-white/10 bg-black/20 p-1 text-xs">
+            <div className="mt-4 grid grid-cols-3 gap-1 rounded-2xl border border-theme bg-input p-1 text-xs">
               {(["chats", "groups", "invites"] as SidebarTab[]).map((item) => (
-                <button key={item} type="button" onClick={() => { setTab(item); setQuery(""); }} className={`relative rounded-xl px-2 py-2.5 capitalize transition ${tab === item ? "bg-white/10 text-white" : "text-white/40 hover:text-white/70"}`}>
+                <button key={item} type="button" onClick={() => { setTab(item); setQuery(""); }} className={`relative rounded-xl px-2 py-2.5 capitalize transition ${tab === item ? "bg-selected text-main" : "text-muted hover-text-secondary"}`}>
                   {item}
-                  {item === "invites" && invites.length > 0 && <span className="absolute right-2 top-1.5 grid min-w-4 place-items-center rounded-full bg-[#8cffaa] px-1 text-[9px] font-bold text-[#07110d]">{invites.length}</span>}
+                  {item === "invites" && invites.length > 0 && <span className="absolute right-2 top-1.5 grid min-w-4 place-items-center rounded-full bg-accent px-1 text-[9px] font-bold text-on-accent">{invites.length}</span>}
                 </button>
               ))}
             </div>
 
             {(notificationState === "disabled" || notificationState === "error") && (
-              <button type="button" onClick={enableNotifications} className="mt-3 flex w-full items-center gap-3 rounded-2xl border border-[#8cffaa]/15 bg-[#8cffaa]/[0.06] px-3.5 py-3 text-left">
-                <BellRing size={17} className="shrink-0 text-[#8cffaa]" />
-                <span className="min-w-0 flex-1"><span className="block text-xs font-medium text-[#c8ffd4]">Enable message notifications</span><span className="mt-0.5 block text-[10px] leading-4 text-white/35">Receive alerts when Blink is in the background or closed.</span></span>
+              <button type="button" onClick={enableNotifications} className="mt-3 flex w-full items-center gap-3 rounded-2xl border border-accent bg-accent-soft px-3.5 py-3 text-left">
+                <BellRing size={17} className="shrink-0 text-accent" />
+                <span className="min-w-0 flex-1"><span className="block text-xs font-medium text-accent">Enable message notifications</span><span className="mt-0.5 block text-[10px] leading-4 text-muted">Receive alerts when Blink is in the background or closed.</span></span>
               </button>
             )}
             {notificationState === "blocked" && (
-              <div className="mt-3 rounded-2xl border border-amber-300/15 bg-amber-300/[0.06] px-3.5 py-3 text-[11px] leading-5 text-amber-100/75">Notifications are blocked. Allow them in your browser or phone settings.</div>
+              <div className="mt-3 rounded-2xl border border-warning bg-warning-soft px-3.5 py-3 text-[11px] leading-5 text-warning">Notifications are blocked. Allow them in your browser or phone settings.</div>
             )}
 
             {tab === "chats" && (
-              <div className="mt-3 flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-3.5 focus-within:border-[#8cffaa]/40">
-                <Search size={17} className="text-white/35" />
-                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search a username" autoCapitalize="none" spellCheck={false} className="min-w-0 flex-1 bg-transparent py-3 text-[16px] outline-none placeholder:text-white/25" />
-                {query && <button type="button" onClick={() => setQuery("")} aria-label="Clear search" className="text-white/35 hover:text-white"><X size={16} /></button>}
+              <div className="mt-3 flex items-center gap-3 rounded-2xl border border-theme bg-input px-3.5 focus-accent">
+                <Search size={17} className="text-muted" />
+                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search a username" autoCapitalize="none" spellCheck={false} className="min-w-0 flex-1 bg-transparent py-3 text-[16px] outline-none placeholder-faint" />
+                {query && <button type="button" onClick={() => setQuery("")} aria-label="Clear search" className="text-muted hover-text-main"><X size={16} /></button>}
               </div>
             )}
           </div>
 
           <div className="soft-scrollbar flex-1 overflow-y-auto p-3">
             {loadingOverview ? (
-              <div className="grid h-40 place-items-center text-white/35"><LoaderCircle size={22} className="animate-spin" /></div>
+              <div className="grid h-40 place-items-center text-muted"><LoaderCircle size={22} className="animate-spin" /></div>
             ) : tab === "chats" ? (
               searchList.length > 0 ? (
                 <div className="space-y-1">
                   {searchList.map((user) => (
-                    <button key={user.id} type="button" onClick={() => selectDirect(user)} className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover:bg-white/5">
-                      <div className="relative"><InitialBadge label={user.username} small /><span className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-[#0d1b15]"><PresenceDot online={user.online} /></span></div>
-                      <div className="min-w-0 flex-1"><div className="truncate text-sm font-medium">@{user.username}</div><div className="mt-0.5 text-xs text-white/35">{user.online ? "online" : formatLastSeen(user.lastSeenAt)}</div></div>
+                    <button key={user.id} type="button" onClick={() => selectDirect(user)} className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover-surface">
+                      <div className="relative"><InitialBadge label={user.username} small /><span className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-panel"><PresenceDot online={user.online} /></span></div>
+                      <div className="min-w-0 flex-1"><div className="truncate text-sm font-medium">@{user.username}</div><div className="mt-0.5 text-xs text-muted">{user.online ? "online" : formatLastSeen(user.lastSeenAt)}</div></div>
                     </button>
                   ))}
                 </div>
               ) : conversations.length > 0 && query.trim().length < 2 ? (
                 <div className="space-y-1">
                   {conversations.map((conversation) => (
-                    <button key={conversation.user.id} type="button" onClick={() => selectDirect(conversation.user)} className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition ${selected?.type === "direct" && selected.user.id === conversation.user.id ? "bg-[#8cffaa]/10" : "hover:bg-white/5"}`}>
-                      <div className="relative"><InitialBadge label={conversation.user.username} small /><span className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-[#0d1b15]"><PresenceDot online={conversation.user.online} /></span></div>
+                    <button key={conversation.user.id} type="button" onClick={() => selectDirect(conversation.user)} className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition ${selected?.type === "direct" && selected.user.id === conversation.user.id ? "bg-accent-soft" : "hover-surface"}`}>
+                      <div className="relative"><InitialBadge label={conversation.user.username} small /><span className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-panel"><PresenceDot online={conversation.user.online} /></span></div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-3"><div className="truncate text-sm font-medium">@{conversation.user.username}</div><div className="shrink-0 text-[10px] text-white/30">{formatConversationTime(conversation.lastMessageAt)}</div></div>
-                        <div className="mt-1 flex items-center gap-2"><p className={`min-w-0 flex-1 truncate text-xs ${conversation.unreadCount ? "text-white/80" : "text-white/35"}`}>{conversation.sentByMe ? "You: " : ""}{conversation.lastMessage}</p>{conversation.unreadCount > 0 && <span className="grid min-w-5 place-items-center rounded-full bg-[#8cffaa] px-1.5 py-0.5 text-[10px] font-bold text-[#07110d]">{conversation.unreadCount}</span>}</div>
+                        <div className="flex items-center justify-between gap-3"><div className="truncate text-sm font-medium">@{conversation.user.username}</div><div className="shrink-0 text-[10px] text-faint">{formatConversationTime(conversation.lastMessageAt)}</div></div>
+                        <div className="mt-1 flex items-center gap-2"><p className={`min-w-0 flex-1 truncate text-xs ${conversation.unreadCount ? "text-secondary" : "text-muted"}`}>{conversation.sentByMe ? "You: " : ""}{conversation.lastMessage}</p>{conversation.unreadCount > 0 && <span className="grid min-w-5 place-items-center rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-bold text-on-accent">{conversation.unreadCount}</span>}</div>
                       </div>
                     </button>
                   ))}
@@ -1116,58 +1116,58 @@ export function ChatShell({ currentUser }: { currentUser: UserSummary }) {
               groups.length > 0 ? (
                 <div className="space-y-1">
                   {groups.map((group) => (
-                    <button key={group.id} type="button" onClick={() => selectGroup(group)} className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition ${selected?.type === "group" && selected.group.id === group.id ? "bg-sky-300/10" : "hover:bg-white/5"}`}>
+                    <button key={group.id} type="button" onClick={() => selectGroup(group)} className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition ${selected?.type === "group" && selected.group.id === group.id ? "bg-group-soft" : "hover-surface"}`}>
                       <InitialBadge label={group.name} small group />
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-3"><div className="truncate text-sm font-medium">{group.name}</div><div className="shrink-0 text-[10px] text-white/30">{formatConversationTime(group.lastMessageAt)}</div></div>
-                        <div className="mt-1 flex items-center gap-2"><p className={`min-w-0 flex-1 truncate text-xs ${group.unreadCount ? "text-white/80" : "text-white/35"}`}>{group.lastSender ? `@${group.lastSender}: ` : ""}{group.lastMessage}</p>{group.unreadCount > 0 && <span className="grid min-w-5 place-items-center rounded-full bg-sky-200 px-1.5 py-0.5 text-[10px] font-bold text-[#07110d]">{group.unreadCount}</span>}</div>
+                        <div className="flex items-center justify-between gap-3"><div className="truncate text-sm font-medium">{group.name}</div><div className="shrink-0 text-[10px] text-faint">{formatConversationTime(group.lastMessageAt)}</div></div>
+                        <div className="mt-1 flex items-center gap-2"><p className={`min-w-0 flex-1 truncate text-xs ${group.unreadCount ? "text-secondary" : "text-muted"}`}>{group.lastSender ? `@${group.lastSender}: ` : ""}{group.lastMessage}</p>{group.unreadCount > 0 && <span className="grid min-w-5 place-items-center rounded-full bg-group px-1.5 py-0.5 text-[10px] font-bold text-on-accent">{group.unreadCount}</span>}</div>
                       </div>
                     </button>
                   ))}
                 </div>
-              ) : <EmptyState icon={<Users size={21} />} title="No groups yet" text="Create a group, then invite people by username." action={<button type="button" onClick={() => setCreateGroupOpen(true)} className="mt-4 rounded-xl bg-[#8cffaa] px-4 py-2.5 text-xs font-semibold text-[#07110d]">Create group</button>} />
+              ) : <EmptyState icon={<Users size={21} />} title="No groups yet" text="Create a group, then invite people by username." action={<button type="button" onClick={() => setCreateGroupOpen(true)} className="mt-4 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-on-accent">Create group</button>} />
             ) : invites.length > 0 ? (
               <div className="space-y-3">
                 {invites.map((invite) => (
-                  <div key={invite.id} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                    <div className="flex items-center gap-3"><InitialBadge label={invite.group.name} small group /><div className="min-w-0"><div className="truncate text-sm font-medium">{invite.group.name}</div><div className="mt-0.5 text-xs text-white/35">Invited by @{invite.inviterUsername}</div></div></div>
-                    <div className="mt-4 grid grid-cols-2 gap-2"><button type="button" onClick={() => void respondToInvite(invite, "decline")} className="rounded-xl border border-white/10 px-3 py-2.5 text-xs text-white/60 hover:bg-white/5">Decline</button><button type="button" onClick={() => void respondToInvite(invite, "accept")} className="rounded-xl bg-[#8cffaa] px-3 py-2.5 text-xs font-semibold text-[#07110d]">Join</button></div>
+                  <div key={invite.id} className="rounded-2xl border border-theme bg-subtle p-4">
+                    <div className="flex items-center gap-3"><InitialBadge label={invite.group.name} small group /><div className="min-w-0"><div className="truncate text-sm font-medium">{invite.group.name}</div><div className="mt-0.5 text-xs text-muted">Invited by @{invite.inviterUsername}</div></div></div>
+                    <div className="mt-4 grid grid-cols-2 gap-2"><button type="button" onClick={() => void respondToInvite(invite, "decline")} className="rounded-xl border border-theme px-3 py-2.5 text-xs text-secondary hover-surface">Decline</button><button type="button" onClick={() => void respondToInvite(invite, "accept")} className="rounded-xl bg-accent px-3 py-2.5 text-xs font-semibold text-on-accent">Join</button></div>
                   </div>
                 ))}
               </div>
             ) : <EmptyState icon={<UserPlus size={21} />} title="No invitations" text="Group invitations will appear here." />}
           </div>
 
-          <div className="safe-bottom border-t border-white/10 px-5 pt-3 text-center text-[11px] leading-5 text-white/25">Seen messages disappear 24 hours later.</div>
+          <div className="safe-bottom border-t border-theme px-5 pt-3 text-center text-[11px] leading-5 text-faint">Seen messages disappear 24 hours later.</div>
         </aside>
 
         <section className={`${selected ? "flex" : "hidden md:flex"} min-w-0 flex-1 flex-col`}>
           {selected ? (
             <>
-              <header className="safe-top relative flex items-center gap-3 border-b border-white/10 px-3 pb-3 pt-3 md:px-5 md:pb-4 md:pt-4">
-                <button type="button" onClick={closeChat} aria-label="Back" className="rounded-xl p-2 text-white/60 hover:bg-white/5 hover:text-white md:hidden"><ArrowLeft size={21} /></button>
+              <header className="safe-top relative flex items-center gap-3 border-b border-theme px-3 pb-3 pt-3 md:px-5 md:pb-4 md:pt-4">
+                <button type="button" onClick={closeChat} aria-label="Back" className="rounded-xl p-2 text-secondary hover-surface hover-text-main md:hidden"><ArrowLeft size={21} /></button>
                 {selected.type === "direct" ? (
-                  <div className="relative"><InitialBadge label={selected.user.username} small /><span className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-[#0d1b15]"><PresenceDot online={selected.user.online} /></span></div>
+                  <div className="relative"><InitialBadge label={selected.user.username} small /><span className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-panel"><PresenceDot online={selected.user.online} /></span></div>
                 ) : <InitialBadge label={selected.group.name} small group />}
                 <button type="button" onClick={() => selected.type === "group" && setMembersModalOpen(true)} className="min-w-0 flex-1 text-left">
                   <div className="truncate text-sm font-semibold">{selected.type === "direct" ? `@${selected.user.username}` : selected.group.name}</div>
-                  <div className={`mt-0.5 truncate text-[11px] ${typingText.includes("typing") ? "text-[#8cffaa]" : "text-white/35"}`}>{typingText}</div>
+                  <div className={`mt-0.5 truncate text-[11px] ${typingText.includes("typing") ? "text-accent" : "text-muted"}`}>{typingText}</div>
                 </button>
-                <button type="button" onClick={() => setMenuOpen((value) => !value)} aria-label="Conversation options" className="rounded-xl p-2.5 text-white/55 hover:bg-white/5 hover:text-white"><MoreVertical size={19} /></button>
+                <button type="button" onClick={() => setMenuOpen((value) => !value)} aria-label="Conversation options" className="rounded-xl p-2.5 text-muted hover-surface hover-text-main"><MoreVertical size={19} /></button>
                 {menuOpen && (
-                  <div className="absolute right-3 top-[calc(100%-4px)] z-30 w-60 rounded-2xl border border-white/10 bg-[#102019] p-1.5 shadow-2xl">
+                  <div className="absolute right-3 top-[calc(100%-4px)] z-30 w-60 rounded-2xl border border-theme bg-panel-solid p-1.5 shadow-2xl">
                     {selected.type === "direct" ? (
                       <>
-                        <button type="button" onClick={() => void toggleBlock()} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-white/70 hover:bg-white/5"><Ban size={16} />{blockState.blockedByMe ? "Unblock user" : "Block user"}</button>
-                        <button type="button" onClick={() => void deleteDirectHistory()} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-red-200 hover:bg-red-400/10"><Trash2 size={16} />Delete chat for both</button>
+                        <button type="button" onClick={() => void toggleBlock()} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-secondary hover-surface"><Ban size={16} />{blockState.blockedByMe ? "Unblock user" : "Block user"}</button>
+                        <button type="button" onClick={() => void deleteDirectHistory()} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-danger hover-danger-soft"><Trash2 size={16} />Delete chat for both</button>
                       </>
                     ) : (
                       <>
-                        <button type="button" onClick={() => { setMenuOpen(false); setInviteModalOpen(true); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-white/70 hover:bg-white/5"><UserPlus size={16} />Invite user</button>
-                        <button type="button" onClick={() => { setMenuOpen(false); setMembersModalOpen(true); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-white/70 hover:bg-white/5"><Users size={16} />View members</button>
-                        {selected.group.role === "OWNER" && <button type="button" onClick={() => void clearGroupHistory()} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-red-200 hover:bg-red-400/10"><History size={16} />Clear group history</button>}
-                        {selected.group.role === "OWNER" && <button type="button" disabled={deletingGroup} onClick={() => void deleteGroup()} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-red-200 hover:bg-red-400/10 disabled:opacity-50"><Trash2 size={16} />{deletingGroup ? "Deleting group…" : "Delete group"}</button>}
-                        <button type="button" onClick={() => void leaveGroup()} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-red-200 hover:bg-red-400/10"><DoorOpen size={16} />Leave group</button>
+                        <button type="button" onClick={() => { setMenuOpen(false); setInviteModalOpen(true); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-secondary hover-surface"><UserPlus size={16} />Invite user</button>
+                        <button type="button" onClick={() => { setMenuOpen(false); setMembersModalOpen(true); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-secondary hover-surface"><Users size={16} />View members</button>
+                        {selected.group.role === "OWNER" && <button type="button" onClick={() => void clearGroupHistory()} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-danger hover-danger-soft"><History size={16} />Clear group history</button>}
+                        {selected.group.role === "OWNER" && <button type="button" disabled={deletingGroup} onClick={() => void deleteGroup()} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-danger hover-danger-soft disabled:opacity-50"><Trash2 size={16} />{deletingGroup ? "Deleting group…" : "Delete group"}</button>}
+                        <button type="button" onClick={() => void leaveGroup()} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-danger hover-danger-soft"><DoorOpen size={16} />Leave group</button>
                       </>
                     )}
                   </div>
@@ -1176,9 +1176,9 @@ export function ChatShell({ currentUser }: { currentUser: UserSummary }) {
 
               <div className="soft-scrollbar flex-1 overflow-y-auto px-3 py-5 sm:px-5 md:px-8">
                 {loadingChat ? (
-                  <div className="grid h-full min-h-48 place-items-center text-white/35"><LoaderCircle size={23} className="animate-spin" /></div>
+                  <div className="grid h-full min-h-48 place-items-center text-muted"><LoaderCircle size={23} className="animate-spin" /></div>
                 ) : chatMessages.length === 0 ? (
-                  <div className="grid h-full min-h-48 place-items-center text-center"><div><InitialBadge label={selected.type === "direct" ? selected.user.username : selected.group.name} group={selected.type === "group"} /><p className="mt-4 text-sm font-medium">Start with a simple hello.</p><p className="mt-1 text-xs text-white/35">Text only. Seen messages disappear after 24 hours.</p></div></div>
+                  <div className="grid h-full min-h-48 place-items-center text-center"><div><InitialBadge label={selected.type === "direct" ? selected.user.username : selected.group.name} group={selected.type === "group"} /><p className="mt-4 text-sm font-medium">Start with a simple hello.</p><p className="mt-1 text-xs text-muted">Text only. Seen messages disappear after 24 hours.</p></div></div>
                 ) : (
                   <div className="mx-auto flex max-w-3xl flex-col gap-2.5">
                     {selected.type === "direct" ? directMessages.map((message) => {
@@ -1224,76 +1224,76 @@ export function ChatShell({ currentUser }: { currentUser: UserSummary }) {
               </div>
 
               {selected.type === "direct" && blockState.blocked && (
-                <div className="mx-3 mb-2 rounded-xl border border-amber-300/15 bg-amber-300/10 px-3 py-2.5 text-center text-xs text-amber-100 md:mx-5">
+                <div className="mx-3 mb-2 rounded-xl border border-warning bg-warning-soft px-3 py-2.5 text-center text-xs text-warning md:mx-5">
                   {blockState.blockedByMe ? "You blocked this user. Unblock them to send messages." : "This user blocked you. Direct messages are disabled."}
                 </div>
               )}
-              {error && <div className="mx-3 mb-2 rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-center text-xs text-red-200 md:mx-5">{error}</div>}
+              {error && <div className="mx-3 mb-2 rounded-xl border border-danger bg-danger-soft px-3 py-2 text-center text-xs text-danger md:mx-5">{error}</div>}
 
-              <form onSubmit={sendMessage} className="safe-bottom border-t border-white/10 p-3 pt-3 md:p-4">
+              <form onSubmit={sendMessage} className="safe-bottom border-t border-theme p-3 pt-3 md:p-4">
                 <div className="mx-auto max-w-3xl">
                   {replyTarget && (
-                    <div className="mb-2 flex items-center gap-3 rounded-2xl border border-[#8cffaa]/20 bg-[#8cffaa]/[0.06] px-3.5 py-2.5">
-                      <Reply size={16} className="shrink-0 text-[#65e98d]" />
+                    <div className="mb-2 flex items-center gap-3 rounded-2xl border border-accent bg-accent-soft px-3.5 py-2.5">
+                      <Reply size={16} className="shrink-0 text-accent" />
                       <div className="min-w-0 flex-1">
-                        <div className="text-[11px] font-medium text-[#4bcf76]">Replying to @{replyTarget.senderUsername}</div>
-                        <div className="mt-0.5 truncate text-xs text-white/45">{replyTarget.body}</div>
+                        <div className="text-[11px] font-medium text-accent">Replying to @{replyTarget.senderUsername}</div>
+                        <div className="mt-0.5 truncate text-xs text-muted">{replyTarget.body}</div>
                       </div>
-                      <button type="button" onClick={() => setReplyTarget(null)} aria-label="Cancel reply" className="rounded-lg p-1.5 text-white/40 hover:bg-white/5 hover:text-white"><X size={15} /></button>
+                      <button type="button" onClick={() => setReplyTarget(null)} aria-label="Cancel reply" className="rounded-lg p-1.5 text-muted hover-surface hover-text-main"><X size={15} /></button>
                     </div>
                   )}
-                  <div className="flex items-end gap-2 rounded-[1.5rem] border border-white/10 bg-black/20 p-1.5 pl-4 focus-within:border-[#8cffaa]/40">
-                    <textarea data-message-composer="true" value={messageText} onChange={(event) => handleMessageChange(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} placeholder={canSend ? "Write a message..." : "Messaging is blocked"} disabled={!canSend} rows={1} className="max-h-32 min-h-10 min-w-0 flex-1 resize-none bg-transparent py-2 text-[16px] leading-6 outline-none placeholder:text-white/25 disabled:cursor-not-allowed" />
-                    <button type="submit" disabled={!messageText.trim() || sending || !canSend} aria-label="Send message" className="grid size-11 shrink-0 place-items-center rounded-[1.15rem] bg-[#8cffaa] text-[#07110d] transition hover:bg-[#a8ffbd] disabled:cursor-not-allowed disabled:opacity-30">{sending ? <LoaderCircle size={18} className="animate-spin" /> : <Send size={18} />}</button>
+                  <div className="flex items-end gap-2 rounded-[1.5rem] border border-theme bg-input p-1.5 pl-4 focus-accent">
+                    <textarea data-message-composer="true" value={messageText} onChange={(event) => handleMessageChange(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} placeholder={canSend ? "Write a message..." : "Messaging is blocked"} disabled={!canSend} rows={1} className="max-h-32 min-h-10 min-w-0 flex-1 resize-none bg-transparent py-2 text-[16px] leading-6 outline-none placeholder-faint disabled:cursor-not-allowed" />
+                    <button type="submit" disabled={!messageText.trim() || sending || !canSend} aria-label="Send message" className="grid size-11 shrink-0 place-items-center rounded-[1.15rem] bg-accent text-on-accent transition hover-accent disabled:cursor-not-allowed disabled:opacity-30">{sending ? <LoaderCircle size={18} className="animate-spin" /> : <Send size={18} />}</button>
                   </div>
                 </div>
               </form>
             </>
           ) : (
-            <div className="grid h-full place-items-center p-8 text-center"><div><div className="mx-auto grid size-16 place-items-center rounded-[1.5rem] border border-[#8cffaa]/15 bg-[#8cffaa]/5 text-[#8cffaa]"><MessageCircle size={26} /></div><h2 className="mt-5 text-lg font-semibold">Text, groups and quiet notifications</h2><p className="mt-2 max-w-sm text-sm leading-6 text-white/35">Choose a conversation, create a group, or search for a username.</p></div></div>
+            <div className="grid h-full place-items-center p-8 text-center"><div><div className="mx-auto grid size-16 place-items-center rounded-[1.5rem] border border-accent bg-accent-soft text-accent"><MessageCircle size={26} /></div><h2 className="mt-5 text-lg font-semibold">Text, groups and quiet notifications</h2><p className="mt-2 max-w-sm text-sm leading-6 text-muted">Choose a conversation, create a group, or search for a username.</p></div></div>
           )}
         </section>
       </div>
 
-      {createGroupOpen && <Modal title="Create a group" onClose={() => setCreateGroupOpen(false)}><form onSubmit={createGroup}><label className="text-xs text-white/45">Group name</label><input autoFocus value={groupName} onChange={(event) => setGroupName(event.target.value.slice(0, 40))} placeholder="Weekend plans" className="mt-2 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3.5 text-[16px] outline-none focus:border-[#8cffaa]/40" /><button type="submit" disabled={!groupName.trim() || creatingGroup} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#8cffaa] px-4 py-3.5 text-sm font-semibold text-[#07110d] disabled:opacity-40">{creatingGroup && <LoaderCircle size={17} className="animate-spin" />}Create group</button></form></Modal>}
+      {createGroupOpen && <Modal title="Create a group" onClose={() => setCreateGroupOpen(false)}><form onSubmit={createGroup}><label className="text-xs text-muted">Group name</label><input autoFocus value={groupName} onChange={(event) => setGroupName(event.target.value.slice(0, 40))} placeholder="Weekend plans" className="mt-2 w-full rounded-2xl border border-theme bg-input px-4 py-3.5 text-[16px] outline-none focus-border-accent" /><button type="submit" disabled={!groupName.trim() || creatingGroup} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-accent px-4 py-3.5 text-sm font-semibold text-on-accent disabled:opacity-40">{creatingGroup && <LoaderCircle size={17} className="animate-spin" />}Create group</button></form></Modal>}
 
-      {inviteModalOpen && selected?.type === "group" && <Modal title={`Invite to ${selected.group.name}`} onClose={() => setInviteModalOpen(false)}><div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-3.5"><Search size={17} className="text-white/35" /><input autoFocus value={inviteQuery} onChange={(event) => setInviteQuery(event.target.value)} placeholder="Search username" className="min-w-0 flex-1 bg-transparent py-3.5 text-[16px] outline-none" /></div><div className="mt-3 max-h-72 overflow-y-auto">{inviteResults.map((user) => <button key={user.id} type="button" onClick={() => void inviteUser(user)} className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover:bg-white/5"><InitialBadge label={user.username} small /><div className="min-w-0 flex-1"><div className="truncate text-sm">@{user.username}</div><div className="text-xs text-white/35">{user.online ? "online" : formatLastSeen(user.lastSeenAt)}</div></div><UserPlus size={17} className="text-[#8cffaa]" /></button>)}{inviteQuery.trim().length >= 2 && inviteResults.length === 0 && <p className="py-10 text-center text-sm text-white/35">No available users found.</p>}</div></Modal>}
+      {inviteModalOpen && selected?.type === "group" && <Modal title={`Invite to ${selected.group.name}`} onClose={() => setInviteModalOpen(false)}><div className="flex items-center gap-3 rounded-2xl border border-theme bg-input px-3.5"><Search size={17} className="text-muted" /><input autoFocus value={inviteQuery} onChange={(event) => setInviteQuery(event.target.value)} placeholder="Search username" className="min-w-0 flex-1 bg-transparent py-3.5 text-[16px] outline-none" /></div><div className="mt-3 max-h-72 overflow-y-auto">{inviteResults.map((user) => <button key={user.id} type="button" onClick={() => void inviteUser(user)} className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover-surface"><InitialBadge label={user.username} small /><div className="min-w-0 flex-1"><div className="truncate text-sm">@{user.username}</div><div className="text-xs text-muted">{user.online ? "online" : formatLastSeen(user.lastSeenAt)}</div></div><UserPlus size={17} className="text-accent" /></button>)}{inviteQuery.trim().length >= 2 && inviteResults.length === 0 && <p className="py-10 text-center text-sm text-muted">No available users found.</p>}</div></Modal>}
 
-      {membersModalOpen && selected?.type === "group" && <Modal title={`${selected.group.name} members`} onClose={() => setMembersModalOpen(false)}><div className="max-h-[60vh] space-y-1 overflow-y-auto">{groupMembers.map((member) => <div key={member.id} className="flex items-center gap-3 rounded-2xl px-3 py-3"><div className="relative"><InitialBadge label={member.username} small /><span className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-[#0d1b15]"><PresenceDot online={member.online} /></span></div><div className="min-w-0 flex-1"><div className="truncate text-sm">@{member.username}{member.id === currentUser.id ? " · you" : ""}</div><div className="mt-0.5 text-xs text-white/35">{member.online ? "online" : formatLastSeen(member.lastSeenAt)}</div></div>{member.role === "OWNER" ? <span className="rounded-full border border-[#8cffaa]/20 bg-[#8cffaa]/10 px-2 py-1 text-[10px] text-[#b9ffc9]">Owner</span> : selected.group.role === "OWNER" && member.id !== currentUser.id ? <button type="button" disabled={removingMemberId === member.id} onClick={() => void removeGroupMember(member)} className="flex shrink-0 items-center gap-1.5 rounded-xl border border-red-400/15 bg-red-400/[0.06] px-2.5 py-2 text-[11px] text-red-200 disabled:opacity-50"><UserMinus size={14} />{removingMemberId === member.id ? "Removing…" : "Remove"}</button> : null}</div>)}</div>{selected.group.role === "OWNER" && <p className="mt-4 text-xs leading-5 text-white/30">Only the group owner can remove members or delete the group.</p>}</Modal>}
+      {membersModalOpen && selected?.type === "group" && <Modal title={`${selected.group.name} members`} onClose={() => setMembersModalOpen(false)}><div className="max-h-[60vh] space-y-1 overflow-y-auto">{groupMembers.map((member) => <div key={member.id} className="flex items-center gap-3 rounded-2xl px-3 py-3"><div className="relative"><InitialBadge label={member.username} small /><span className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-panel"><PresenceDot online={member.online} /></span></div><div className="min-w-0 flex-1"><div className="truncate text-sm">@{member.username}{member.id === currentUser.id ? " · you" : ""}</div><div className="mt-0.5 text-xs text-muted">{member.online ? "online" : formatLastSeen(member.lastSeenAt)}</div></div>{member.role === "OWNER" ? <span className="rounded-full border border-accent bg-accent-soft px-2 py-1 text-[10px] text-accent">Owner</span> : selected.group.role === "OWNER" && member.id !== currentUser.id ? <button type="button" disabled={removingMemberId === member.id} onClick={() => void removeGroupMember(member)} className="flex shrink-0 items-center gap-1.5 rounded-xl border border-danger bg-danger-soft px-2.5 py-2 text-[11px] text-danger disabled:opacity-50"><UserMinus size={14} />{removingMemberId === member.id ? "Removing…" : "Remove"}</button> : null}</div>)}</div>{selected.group.role === "OWNER" && <p className="mt-4 text-xs leading-5 text-faint">Only the group owner can remove members or delete the group.</p>}</Modal>}
 
       {settingsOpen && (
         <Modal title="Settings" onClose={() => setSettingsOpen(false)}>
           <div className="space-y-2">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+            <div className="rounded-2xl border border-theme bg-subtle p-4">
               <div className="flex items-center gap-3">
-                {theme === "dark" ? <Moon size={19} className="text-[#8cffaa]" /> : <Sun size={19} className="text-amber-500" />}
+                {theme === "dark" ? <Moon size={19} className="text-accent" /> : <Sun size={19} className="text-warning" />}
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium">Appearance</div>
-                  <div className="mt-1 text-xs text-white/35">Choose a light or dark theme on this device.</div>
+                  <div className="mt-1 text-xs text-muted">Choose a light or dark theme on this device.</div>
                 </div>
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl border border-white/10 bg-black/10 p-1">
-                <button type="button" onClick={() => applyTheme("light")} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs transition ${theme === "light" ? "bg-[#8cffaa] font-semibold text-[#07110d]" : "text-white/50 hover:bg-white/5"}`}><Sun size={15} />Light</button>
-                <button type="button" onClick={() => applyTheme("dark")} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs transition ${theme === "dark" ? "bg-[#8cffaa] font-semibold text-[#07110d]" : "text-white/50 hover:bg-white/5"}`}><Moon size={15} />Dark</button>
+              <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl border border-theme bg-input p-1">
+                <button type="button" onClick={() => applyTheme("light")} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs transition ${theme === "light" ? "bg-accent font-semibold text-on-accent" : "text-muted hover-surface"}`}><Sun size={15} />Light</button>
+                <button type="button" onClick={() => applyTheme("dark")} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs transition ${theme === "dark" ? "bg-accent font-semibold text-on-accent" : "text-muted hover-surface"}`}><Moon size={15} />Dark</button>
               </div>
             </div>
-            <button type="button" onClick={notificationState === "enabled" ? disableNotifications : enableNotifications} disabled={notificationState === "unsupported" || notificationState === "blocked"} className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-4 text-left disabled:opacity-50">
-              {notificationState === "enabled" ? <BellRing size={19} className="text-[#8cffaa]" /> : <Bell size={19} className="text-white/55" />}
-              <div className="min-w-0 flex-1"><div className="text-sm font-medium">{notificationsLabel}</div><div className="mt-1 text-xs leading-5 text-white/35">The “blink” sound and an in-app alert play while Blink is open. In the background or when closed, the phone shows a push notification with its system notification sound.</div></div>
+            <button type="button" onClick={notificationState === "enabled" ? disableNotifications : enableNotifications} disabled={notificationState === "unsupported" || notificationState === "blocked"} className="flex w-full items-center gap-3 rounded-2xl border border-theme bg-subtle px-4 py-4 text-left disabled:opacity-50">
+              {notificationState === "enabled" ? <BellRing size={19} className="text-accent" /> : <Bell size={19} className="text-muted" />}
+              <div className="min-w-0 flex-1"><div className="text-sm font-medium">{notificationsLabel}</div><div className="mt-1 text-xs leading-5 text-muted">The “blink” sound and an in-app alert play while Blink is open. In the background or when closed, the phone shows a push notification with its system notification sound.</div></div>
             </button>
-            <button type="button" onClick={logout} className="flex w-full items-center gap-3 rounded-2xl border border-white/10 px-4 py-4 text-left text-white/70 hover:bg-white/5"><LogOut size={19} /><div><div className="text-sm">Sign out</div><div className="mt-1 text-xs text-white/35">You stay signed in on this device until you choose this option.</div></div></button>
-            <button type="button" onClick={() => { setSettingsOpen(false); setDeleteAccountOpen(true); }} className="flex w-full items-center gap-3 rounded-2xl border border-red-400/15 bg-red-400/[0.06] px-4 py-4 text-left text-red-200"><Trash2 size={19} /><div><div className="text-sm font-medium">Delete account</div><div className="mt-1 text-xs text-red-200/55">Permanently removes your account and messages.</div></div></button>
+            <button type="button" onClick={logout} className="flex w-full items-center gap-3 rounded-2xl border border-theme px-4 py-4 text-left text-secondary hover-surface"><LogOut size={19} /><div><div className="text-sm">Sign out</div><div className="mt-1 text-xs text-muted">You stay signed in on this device until you choose this option.</div></div></button>
+            <button type="button" onClick={() => { setSettingsOpen(false); setDeleteAccountOpen(true); }} className="flex w-full items-center gap-3 rounded-2xl border border-danger bg-danger-soft px-4 py-4 text-left text-danger"><Trash2 size={19} /><div><div className="text-sm font-medium">Delete account</div><div className="mt-1 text-xs text-danger-muted">Permanently removes your account and messages.</div></div></button>
           </div>
         </Modal>
       )}
 
-      {deleteAccountOpen && <Modal title="Delete your account" onClose={() => !deletingAccount && setDeleteAccountOpen(false)}><p className="text-sm leading-6 text-white/65">Are you sure you want to delete your account?</p><p className="mt-2 text-xs leading-5 text-white/35">This cannot be undone. Your direct messages, memberships, subscriptions and account will be removed.</p><div className="mt-5 grid grid-cols-2 gap-2"><button type="button" disabled={deletingAccount} onClick={() => setDeleteAccountOpen(false)} className="rounded-2xl border border-white/10 px-4 py-3 text-sm text-white/65">No, keep it</button><button type="button" disabled={deletingAccount} onClick={() => void deleteAccount()} className="flex items-center justify-center gap-2 rounded-2xl bg-red-400 px-4 py-3 text-sm font-semibold text-[#220707] disabled:opacity-50">{deletingAccount && <LoaderCircle size={16} className="animate-spin" />}Yes, delete</button></div></Modal>}
+      {deleteAccountOpen && <Modal title="Delete your account" onClose={() => !deletingAccount && setDeleteAccountOpen(false)}><p className="text-sm leading-6 text-secondary">Are you sure you want to delete your account?</p><p className="mt-2 text-xs leading-5 text-muted">This cannot be undone. Your direct messages, memberships, subscriptions and account will be removed.</p><div className="mt-5 grid grid-cols-2 gap-2"><button type="button" disabled={deletingAccount} onClick={() => setDeleteAccountOpen(false)} className="rounded-2xl border border-theme px-4 py-3 text-sm text-secondary">No, keep it</button><button type="button" disabled={deletingAccount} onClick={() => void deleteAccount()} className="flex items-center justify-center gap-2 rounded-2xl bg-danger px-4 py-3 text-sm font-semibold text-on-danger disabled:opacity-50">{deletingAccount && <LoaderCircle size={16} className="animate-spin" />}Yes, delete</button></div></Modal>}
     </main>
   );
 }
 
 function EmptyState({ icon, title, text, action }: { icon: ReactNode; title: string; text: string; action?: ReactNode }) {
-  return <div className="px-5 py-16 text-center"><div className="mx-auto grid size-12 place-items-center rounded-2xl bg-white/5 text-white/35">{icon}</div><p className="mt-4 text-sm font-medium text-white/70">{title}</p><p className="mt-1 text-xs leading-5 text-white/35">{text}</p>{action}</div>;
+  return <div className="px-5 py-16 text-center"><div className="mx-auto grid size-12 place-items-center rounded-2xl bg-subtle text-muted">{icon}</div><p className="mt-4 text-sm font-medium text-secondary">{title}</p><p className="mt-1 text-xs leading-5 text-muted">{text}</p>{action}</div>;
 }
 
 function MessageBubble({
@@ -1352,8 +1352,8 @@ function MessageBubble({
 
   return (
     <div className={`relative flex ${sentByMe ? "justify-end" : "justify-start"}`}>
-      <div className="pointer-events-none absolute left-1 top-1/2 -translate-y-1/2 text-[#4bcf76] transition-opacity" style={{ opacity: Math.min(1, dragX / 45) }}>
-        <span className="grid size-8 place-items-center rounded-full border border-[#8cffaa]/20 bg-[#8cffaa]/10"><Reply size={15} /></span>
+      <div className="pointer-events-none absolute left-1 top-1/2 -translate-y-1/2 text-accent transition-opacity" style={{ opacity: Math.min(1, dragX / 45) }}>
+        <span className="grid size-8 place-items-center rounded-full border border-accent bg-accent-soft"><Reply size={15} /></span>
       </div>
       <div
         onPointerDown={handlePointerDown}
@@ -1363,22 +1363,22 @@ function MessageBubble({
         className={`max-w-[86%] touch-pan-y select-none sm:max-w-[72%] ${sentByMe ? "items-end" : "items-start"}`}
         style={{ transform: `translateX(${dragX}px)`, transition: startPoint.current ? "none" : "transform 160ms ease" }}
       >
-        {label && <div className="mb-1 px-2 text-[10px] font-medium text-[#4bcf76]">@{label}</div>}
-        <div className={`overflow-hidden rounded-[1.35rem] ${sentByMe ? "rounded-br-md bg-[#8cffaa] text-[#07110d]" : "rounded-bl-md border border-white/10 bg-white/[0.06] text-white"}`}>
+        {label && <div className="mb-1 px-2 text-[10px] font-medium text-accent">@{label}</div>}
+        <div className={`overflow-hidden rounded-[1.35rem] ${sentByMe ? "rounded-br-md bg-accent text-on-accent" : "rounded-bl-md border border-theme bg-subtle text-main"}`}>
           {replyTo && (
-            <div className={`mx-2 mt-2 rounded-xl border-l-2 px-3 py-2 text-xs ${sentByMe ? "border-[#164c29] bg-black/10" : "border-[#8cffaa]/60 bg-black/15"}`}>
-              <div className={`text-[10px] font-semibold ${sentByMe ? "text-[#164c29]" : "text-[#65e98d]"}`}>@{replyTo.senderUsername}</div>
-              <div className={`mt-0.5 line-clamp-2 ${sentByMe ? "text-[#173b25]/75" : "text-white/45"}`}>{replyTo.body}</div>
+            <div className={`mx-2 mt-2 rounded-xl border-l-2 px-3 py-2 text-xs ${sentByMe ? "border-on-accent bg-input" : "border-accent bg-input"}`}>
+              <div className={`text-[10px] font-semibold ${sentByMe ? "text-on-accent-strong" : "text-accent"}`}>@{replyTo.senderUsername}</div>
+              <div className={`mt-0.5 line-clamp-2 ${sentByMe ? "text-on-accent-muted" : "text-muted"}`}>{replyTo.body}</div>
             </div>
           )}
           <div className="whitespace-pre-wrap break-words px-4 py-2.5 text-[15px] leading-6">{body}</div>
         </div>
-        <div className={`mt-1 flex items-center gap-1.5 px-1 text-[10px] text-white/25 ${sentByMe ? "justify-end" : "justify-start"}`}>
-          <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={onReply} className="rounded-md p-1 text-white/25 hover:bg-white/5 hover:text-white/60" aria-label="Reply to message"><Reply size={12} /></button>
+        <div className={`mt-1 flex items-center gap-1.5 px-1 text-[10px] text-faint ${sentByMe ? "justify-end" : "justify-start"}`}>
+          <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={onReply} className="rounded-md p-1 text-faint hover-surface hover-text-secondary" aria-label="Reply to message"><Reply size={12} /></button>
           <span>{formatTime(createdAt)}</span>
-          {sentByMe && (seen ? <CheckCheck size={12} className="text-[#4bcf76]" /> : <Check size={12} />)}
+          {sentByMe && (seen ? <CheckCheck size={12} className="text-accent" /> : <Check size={12} />)}
           {onDelete && (
-            <button type="button" disabled={deleting} onPointerDown={(event) => event.stopPropagation()} onClick={onDelete} className="rounded-md p-1 text-white/25 hover:bg-red-400/10 hover:text-red-300 disabled:opacity-40" aria-label="Delete message">
+            <button type="button" disabled={deleting} onPointerDown={(event) => event.stopPropagation()} onClick={onDelete} className="rounded-md p-1 text-faint hover-danger-soft hover-text-danger disabled:opacity-40" aria-label="Delete message">
               {deleting ? <LoaderCircle size={12} className="animate-spin" /> : <Trash2 size={12} />}
             </button>
           )}

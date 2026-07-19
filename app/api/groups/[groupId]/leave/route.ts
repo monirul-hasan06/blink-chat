@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { markGroupMessagesSeen } from "@/lib/chat";
+import { groupScopeKey, scheduleFullySeenGroupMessagesForExpiry } from "@/lib/chat";
 import { handleRouteError, jsonError } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
 
@@ -19,8 +19,6 @@ export async function POST(
     });
     if (!membership) return jsonError("You are not a member of this group", 404);
 
-    await markGroupMessagesSeen(groupId, currentUser.id);
-
     if (membership.role === "OWNER") {
       const nextOwner = await prisma.groupMember.findFirst({
         where: { groupId, userId: { not: currentUser.id } },
@@ -36,12 +34,27 @@ export async function POST(
       await prisma.$transaction([
         prisma.groupMember.update({ where: { id: nextOwner.id }, data: { role: "OWNER" } }),
         prisma.group.update({ where: { id: groupId }, data: { createdById: nextOwner.userId } }),
+        prisma.groupMessageReceipt.deleteMany({
+          where: { userId: currentUser.id, message: { groupId } }
+        }),
+        prisma.typingStatus.deleteMany({
+          where: { userId: currentUser.id, scopeKey: groupScopeKey(groupId) }
+        }),
         prisma.groupMember.delete({ where: { id: membership.id } })
       ]);
     } else {
-      await prisma.groupMember.delete({ where: { id: membership.id } });
+      await prisma.$transaction([
+        prisma.groupMessageReceipt.deleteMany({
+          where: { userId: currentUser.id, message: { groupId } }
+        }),
+        prisma.typingStatus.deleteMany({
+          where: { userId: currentUser.id, scopeKey: groupScopeKey(groupId) }
+        }),
+        prisma.groupMember.delete({ where: { id: membership.id } })
+      ]);
     }
 
+    await scheduleFullySeenGroupMessagesForExpiry(groupId);
     return NextResponse.json({ ok: true, groupDeleted: false });
   } catch (error) {
     return handleRouteError(error);

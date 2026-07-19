@@ -31,7 +31,7 @@ export function InstallButton() {
         await promptEvent.userChoice;
         setPromptEvent(null);
       }}
-      className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 transition hover:bg-white/10"
+      className="inline-flex items-center gap-2 rounded-full border border-theme bg-subtle px-4 py-2 text-sm text-secondary transition hover-surface"
     >
       <Download size={15} />
       Install app

@@ -154,3 +154,9 @@ A user can delete only a message they personally sent. Deleting it removes the m
 ## Appearance
 
 Open **Settings → Appearance** to select Light or Dark. The choice is stored in the browser or installed PWA on that device and remains after closing the app.
+
+## Theme and reliability notes
+
+The interface uses semantic color tokens rather than recoloring dark-mode utility classes. Light mode includes dedicated high-contrast text, muted text, accent, group, warning and destructive colors. The login screen also includes a theme toggle, and an existing authenticated session opens `/chat` instead of showing the login form again.
+
+API routes return JSON for handled database and request errors so the client does not try to parse plain server error pages. Leaving a group also removes that user's obsolete read receipts and typing state so old records do not delay message expiry.

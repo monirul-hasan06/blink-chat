@@ -5,16 +5,20 @@ import { prisma } from "@/lib/prisma";
 import { pushSubscriptionSchema } from "@/lib/validation";
 
 export async function GET() {
-  const currentUser = await getCurrentUser();
-  if (!currentUser) return jsonError("Unauthorized", 401);
-  return NextResponse.json({
-    configured: Boolean(
-      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY &&
-      process.env.VAPID_PRIVATE_KEY &&
-      process.env.VAPID_SUBJECT
-    ),
-    publicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null
-  });
+  try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) return jsonError("Unauthorized", 401);
+    return NextResponse.json({
+      configured: Boolean(
+        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY &&
+        process.env.VAPID_PRIVATE_KEY &&
+        process.env.VAPID_SUBJECT
+      ),
+      publicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null
+    });
+  } catch (error) {
+    return handleRouteError(error);
+  }
 }
 
 export async function POST(request: Request) {

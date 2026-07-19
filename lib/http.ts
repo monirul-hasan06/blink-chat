@@ -11,16 +11,27 @@ export function handleRouteError(error: unknown) {
     return jsonError(error.issues[0]?.message ?? "Invalid request", 400);
   }
 
+  if (error instanceof SyntaxError) {
+    return jsonError("The request body is not valid JSON", 400);
+  }
+
   console.error(error);
 
-  if (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    error.code === "P2021"
-  ) {
-    return jsonError(
-      "The database tables have not been created. Apply the Prisma migration and redeploy.",
-      503
-    );
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error.code === "P2021") {
+      return jsonError(
+        "The database tables have not been created. Apply the Prisma migration and redeploy.",
+        503
+      );
+    }
+
+    if (error.code === "P2025") {
+      return jsonError("The requested item no longer exists", 404);
+    }
+
+    if (error.code === "P2003") {
+      return jsonError("That action conflicts with related data", 409);
+    }
   }
 
   if (error instanceof Prisma.PrismaClientInitializationError) {
