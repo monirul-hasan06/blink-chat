@@ -6,11 +6,14 @@ Blink is a mobile-first, text-only private messaging PWA built with Next.js, Typ
 
 - Username and 4–8 digit PIN signup/login
 - One-to-one text messaging
+- Light and dark themes saved per device
+- Swipe right on any message to reply with a quoted preview
+- Delete an individual message you sent for everyone
 - Seen messages deleted 24 hours later
 - Delete an entire direct chat for both users
 - Block/unblock users; either direction disables direct messages
 - Create groups, invite users, accept or decline invites, and leave groups
-- Group owner can clear group history
+- Group owner can clear group history, remove members and permanently delete the group
 - Online/offline status, last seen and typing indicators
 - Web Push notifications
 - Custom short “blink” sound while the app is open
@@ -79,7 +82,7 @@ The included build command runs:
 prisma generate && prisma migrate deploy && next build
 ```
 
-The migration creates the direct-message, group, invitation, block, presence, typing and push-subscription tables.
+The migrations create the direct-message, group, invitation, block, presence, typing and push-subscription tables, then add reply references for direct and group messages.
 
 After deployment, verify:
 
@@ -123,3 +126,31 @@ Blink stays Vercel-friendly by using short polling rather than a dedicated WebSo
 - Conversation/group lists refresh about every 5 seconds.
 - Presence heartbeats run about every 20 seconds.
 - Typing status expires automatically after six seconds.
+
+
+## Mobile app behavior
+
+Blink uses a responsive mobile-first layout and a web app manifest with `display: standalone`. After deployment over HTTPS, supported browsers can install it on a phone and launch it from the home screen without the normal browser chrome. Android browsers usually show an install prompt; on iPhone or iPad use Safari → Share → Add to Home Screen. Push notifications still require the user to allow notification permission, and iOS requires the installed Home Screen app.
+
+## Persistent login
+
+Blink stores the login in a secure HTTP-only cookie for up to 400 days and refreshes it whenever an authenticated user opens the app. Closing the browser, closing the installed PWA, restarting the phone, or installing an update does not sign the user out. The user is signed out only when they choose **Sign out**, clear the browser/app data, the cookie is removed by the operating system/browser, or the account is deleted after one year of inactivity.
+
+## Notification delivery behavior
+
+- When Blink is open and focused, the receiver gets an in-app notification banner and the custom `blink.wav` sound.
+- When Blink is in the background or closed, the service worker shows a system push notification with the device's enabled notification sound and vibration.
+- Push messages are retained by the push service for up to 24 hours when a subscribed device is temporarily offline.
+- Each user must tap the bell and grant permission once on each device.
+- Signing out detaches that device from the account so it does not keep receiving the previous user's messages. Logging in again automatically reattaches an existing browser subscription.
+
+
+## Replying and deleting messages
+
+On a phone, swipe a message to the right until the reply icon completes, then type and send. A reply preview appears above the composer and inside the new message. A small reply button is also available for mouse and keyboard users.
+
+A user can delete only a message they personally sent. Deleting it removes the message from the database for every participant. Replies to a deleted message remain, but their quoted preview is removed.
+
+## Appearance
+
+Open **Settings → Appearance** to select Light or Dark. The choice is stored in the browser or installed PWA on that device and remains after closing the app.

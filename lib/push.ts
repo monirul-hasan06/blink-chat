@@ -46,7 +46,7 @@ export async function sendPushToUser(userId: string, payload: PushPayload) {
             }
           },
           JSON.stringify(payload),
-          { TTL: 60 * 60 }
+          { TTL: 60 * 60 * 24, urgency: "high" }
         );
       } catch (error) {
         const statusCode =

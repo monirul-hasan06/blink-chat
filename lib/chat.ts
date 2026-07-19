@@ -26,19 +26,8 @@ export async function getBlockState(firstUserId: string, secondUserId: string) {
   };
 }
 
-export async function markGroupMessagesSeen(groupId: string, userId: string) {
-  const now = new Date();
-  const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-
-  await prisma.groupMessageReceipt.updateMany({
-    where: {
-      userId,
-      seenAt: null,
-      message: { groupId }
-    },
-    data: { seenAt: now }
-  });
-
+export async function scheduleFullySeenGroupMessagesForExpiry(groupId: string) {
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
   const candidates = await prisma.groupMessage.findMany({
     where: {
       groupId,
@@ -54,4 +43,19 @@ export async function markGroupMessagesSeen(groupId: string, userId: string) {
       data: { expiresAt }
     });
   }
+}
+
+export async function markGroupMessagesSeen(groupId: string, userId: string) {
+  const now = new Date();
+
+  await prisma.groupMessageReceipt.updateMany({
+    where: {
+      userId,
+      seenAt: null,
+      message: { groupId }
+    },
+    data: { seenAt: now }
+  });
+
+  await scheduleFullySeenGroupMessagesForExpiry(groupId);
 }

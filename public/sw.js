@@ -1,4 +1,4 @@
-const CACHE_NAME = "blink-static-v3";
+const CACHE_NAME = "blink-static-v4";
 const STATIC_ASSETS = [
   "/manifest.webmanifest",
   "/icons/icon-192.png",
@@ -48,11 +48,16 @@ self.addEventListener("fetch", (event) => {
 });
 
 self.addEventListener("push", (event) => {
-  const payload = event.data ? event.data.json() : {};
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    payload = { title: "Blink", body: "You received a new message", url: "/chat" };
+  }
 
   event.waitUntil((async () => {
     const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-    const focusedWindow = windows.find((client) => client.focused);
+    const focusedWindow = windows.find((client) => client.focused && client.visibilityState === "visible");
 
     if (focusedWindow) {
       focusedWindow.postMessage({ type: "BLINK_PUSH", payload });
@@ -63,9 +68,11 @@ self.addEventListener("push", (event) => {
       body: payload.body || "You received a new message",
       icon: "/icons/icon-192.png",
       badge: "/icons/icon-192.png",
-      tag: payload.tag || "blink-message",
+      tag: payload.tag || `blink-message-${Date.now()}`,
       renotify: true,
       silent: false,
+      vibrate: [90, 60, 90],
+      timestamp: Date.now(),
       data: { url: payload.url || "/chat" }
     });
   })());

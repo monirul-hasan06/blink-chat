@@ -52,7 +52,10 @@ export async function GET(
           receiverId: true,
           createdAt: true,
           seenAt: true,
-          expiresAt: true
+          expiresAt: true,
+          replyTo: {
+            select: { id: true, body: true, senderId: true, expiresAt: true }
+          }
         },
         orderBy: { createdAt: "asc" },
         take: 200
@@ -74,7 +77,12 @@ export async function GET(
         username: otherUser.username,
         ...presenceFromDates(otherUser.lastActiveAt, otherUser.onlineUntil)
       },
-      messages,
+      messages: messages.map((message: any) => ({
+        ...message,
+        replyTo: message.replyTo && (!message.replyTo.expiresAt || message.replyTo.expiresAt > now)
+          ? { id: message.replyTo.id, body: message.replyTo.body, senderId: message.replyTo.senderId }
+          : null
+      })),
       blockState,
       typing: Boolean(typing)
     });
@@ -106,11 +114,30 @@ export async function POST(
     }
 
     const input = messageSchema.parse(await request.json());
+
+    let replyToId: string | null = null;
+    if (input.replyToId) {
+      const replyTarget = await prisma.message.findFirst({
+        where: {
+          id: input.replyToId,
+          OR: [
+            { senderId: currentUser.id, receiverId: userId },
+            { senderId: userId, receiverId: currentUser.id }
+          ],
+          AND: [{ OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] }]
+        },
+        select: { id: true }
+      });
+      if (!replyTarget) return jsonError("The message you are replying to is no longer available", 404);
+      replyToId = replyTarget.id;
+    }
+
     const message = await prisma.message.create({
       data: {
         body: input.body,
         senderId: currentUser.id,
-        receiverId: userId
+        receiverId: userId,
+        replyToId
       },
       select: {
         id: true,
@@ -119,7 +146,10 @@ export async function POST(
         receiverId: true,
         createdAt: true,
         seenAt: true,
-        expiresAt: true
+        expiresAt: true,
+        replyTo: {
+          select: { id: true, body: true, senderId: true }
+        }
       }
     });
 

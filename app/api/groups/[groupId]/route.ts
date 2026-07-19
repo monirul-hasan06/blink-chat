@@ -44,7 +44,16 @@ export async function GET(
             where: { OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] },
             include: {
               sender: { select: { id: true, username: true } },
-              receipts: { select: { seenAt: true } }
+              receipts: { select: { seenAt: true } },
+              replyTo: {
+                select: {
+                  id: true,
+                  body: true,
+                  senderId: true,
+                  expiresAt: true,
+                  sender: { select: { username: true } }
+                }
+              }
             },
             orderBy: { createdAt: "asc" },
             take: 250
@@ -82,7 +91,13 @@ export async function GET(
         senderUsername: message.sender.username,
         createdAt: message.createdAt,
         expiresAt: message.expiresAt,
-        seenByAll: message.receipts.every((receipt: any) => receipt.seenAt !== null)
+        seenByAll: message.receipts.every((receipt: any) => receipt.seenAt !== null),
+        replyTo: message.replyTo && (!message.replyTo.expiresAt || message.replyTo.expiresAt > now) ? {
+          id: message.replyTo.id,
+          body: message.replyTo.body,
+          senderId: message.replyTo.senderId,
+          senderUsername: message.replyTo.sender.username
+        } : null
       })),
       typingUsers: typingStatuses.map((status: any) => status.user.username)
     });
@@ -103,6 +118,21 @@ export async function POST(
     if (!membership) return jsonError("You are not a member of this group", 403);
 
     const input = messageSchema.parse(await request.json());
+
+    let replyToId: string | null = null;
+    if (input.replyToId) {
+      const replyTarget = await prisma.groupMessage.findFirst({
+        where: {
+          id: input.replyToId,
+          groupId,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }]
+        },
+        select: { id: true }
+      });
+      if (!replyTarget) return jsonError("The message you are replying to is no longer available", 404);
+      replyToId = replyTarget.id;
+    }
+
     const members = await prisma.groupMember.findMany({
       where: { groupId },
       select: { userId: true }
@@ -118,11 +148,22 @@ export async function POST(
         senderId: currentUser.id,
         groupId,
         expiresAt,
+        replyToId,
         receipts: {
           create: receiverIds.map((userId: string) => ({ userId }))
         }
       },
-      include: { sender: { select: { username: true } } }
+      include: {
+        sender: { select: { username: true } },
+        replyTo: {
+          select: {
+            id: true,
+            body: true,
+            senderId: true,
+            sender: { select: { username: true } }
+          }
+        }
+      }
     });
 
     const group = await prisma.group.update({
@@ -146,9 +187,38 @@ export async function POST(
         senderUsername: message.sender.username,
         createdAt: message.createdAt,
         expiresAt: message.expiresAt,
-        seenByAll: receiverIds.length === 0
+        seenByAll: receiverIds.length === 0,
+        replyTo: message.replyTo ? {
+          id: message.replyTo.id,
+          body: message.replyTo.body,
+          senderId: message.replyTo.senderId,
+          senderUsername: message.replyTo.sender.username
+        } : null
       }
     }, { status: 201 });
+  } catch (error) {
+    return handleRouteError(error);
+  }
+}
+
+export async function DELETE(
+  _request: Request,
+  context: { params: Promise<{ groupId: string }> }
+) {
+  try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) return jsonError("Unauthorized", 401);
+    const { groupId } = await context.params;
+
+    const membership = await prisma.groupMember.findUnique({
+      where: { groupId_userId: { groupId, userId: currentUser.id } },
+      select: { role: true }
+    });
+    if (!membership) return jsonError("You are not a member of this group", 403);
+    if (membership.role !== "OWNER") return jsonError("Only the group owner can delete the group", 403);
+
+    await prisma.group.delete({ where: { id: groupId } });
+    return NextResponse.json({ ok: true });
   } catch (error) {
     return handleRouteError(error);
   }

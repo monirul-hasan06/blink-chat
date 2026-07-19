@@ -4,7 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { onlineUntilFromNow } from "@/lib/presence";
 
 const COOKIE_NAME = "blink_session";
-const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 30;
+// Keep the login across browser and installed-PWA restarts. The app refreshes
+// this cookie whenever an authenticated user opens Blink.
+const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 400;
 
 function getSecret() {
   const secret = process.env.AUTH_SECRET;
@@ -30,6 +32,23 @@ export async function createSession(userId: string) {
     path: "/",
     maxAge: SESSION_DURATION_SECONDS
   });
+}
+
+export async function refreshSession() {
+  const userId = await getSessionUserId();
+  if (!userId) return null;
+
+  const exists = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true }
+  });
+  if (!exists) {
+    await clearSession();
+    return null;
+  }
+
+  await createSession(userId);
+  return userId;
 }
 
 export async function clearSession() {

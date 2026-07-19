@@ -51,10 +51,14 @@ model Message {
   expiresAt  DateTime?
   senderId   String
   receiverId String
-  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  replyToId  String?
+  sender     User      @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User      @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  replyTo    Message?  @relation("DirectMessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies    Message[] @relation("DirectMessageReplies")
 
   @@index([senderId, receiverId, createdAt])
+  @@index([replyToId])
   @@index([receiverId, seenAt])
   @@index([expiresAt])
 }
@@ -119,11 +123,15 @@ model GroupMessage {
   expiresAt DateTime?
   senderId  String
   groupId   String
+  replyToId String?
   sender    User                  @relation(fields: [senderId], references: [id], onDelete: Cascade)
   group     Group                 @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  replyTo   GroupMessage?         @relation("GroupMessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies   GroupMessage[]        @relation("GroupMessageReplies")
   receipts  GroupMessageReceipt[]
 
   @@index([groupId, createdAt])
+  @@index([replyToId])
   @@index([expiresAt])
 }
 

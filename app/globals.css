@@ -86,3 +86,92 @@ button {
 .blink-dot {
   animation: blink-pulse 2s ease-in-out infinite;
 }
+
+/* Per-device light theme. The dark theme remains the default. */
+html[data-theme="light"] {
+  --bg: #eef7f1;
+  --panel: rgba(255, 255, 255, 0.86);
+  --panel-solid: #ffffff;
+  --line: rgba(15, 54, 34, 0.12);
+  --muted: #607368;
+  --text: #102019;
+  color-scheme: light;
+}
+
+html[data-theme="light"] body {
+  background:
+    radial-gradient(circle at 14% 0%, rgba(77, 244, 126, 0.15), transparent 30rem),
+    radial-gradient(circle at 92% 12%, rgba(97, 188, 222, 0.12), transparent 32rem),
+    var(--bg);
+  color: var(--text);
+}
+
+html[data-theme="light"] .glass {
+  box-shadow: 0 22px 70px rgba(18, 67, 41, 0.12);
+}
+
+html[data-theme="light"] [class~="text-white"],
+html[data-theme="light"] [class~="text-white/80"],
+html[data-theme="light"] [class~="text-white/70"],
+html[data-theme="light"] [class~="text-white/65"],
+html[data-theme="light"] [class~="text-white/60"],
+html[data-theme="light"] [class~="text-white/55"] {
+  color: rgba(16, 32, 25, 0.82) !important;
+}
+
+html[data-theme="light"] [class~="text-white/50"],
+html[data-theme="light"] [class~="text-white/45"],
+html[data-theme="light"] [class~="text-white/40"],
+html[data-theme="light"] [class~="text-white/35"] {
+  color: rgba(16, 32, 25, 0.58) !important;
+}
+
+html[data-theme="light"] [class~="text-white/30"],
+html[data-theme="light"] [class~="text-white/25"] {
+  color: rgba(16, 32, 25, 0.38) !important;
+}
+
+html[data-theme="light"] [class~="border-white/10"] {
+  border-color: rgba(15, 54, 34, 0.12) !important;
+}
+
+html[data-theme="light"] [class~="bg-black/20"],
+html[data-theme="light"] [class~="bg-black/15"],
+html[data-theme="light"] [class~="bg-black/10"] {
+  background-color: rgba(22, 70, 44, 0.055) !important;
+}
+
+html[data-theme="light"] [class~="bg-white/5"],
+html[data-theme="light"] [class~="bg-white/[0.035]"],
+html[data-theme="light"] [class~="bg-white/[0.06]"] {
+  background-color: rgba(24, 83, 50, 0.055) !important;
+}
+
+html[data-theme="light"] [class~="bg-white/10"] {
+  background-color: rgba(24, 83, 50, 0.1) !important;
+}
+
+html[data-theme="light"] [class~="bg-[#102019]"],
+html[data-theme="light"] [class~="bg-[#102019]/95"] {
+  background-color: rgba(255, 255, 255, 0.97) !important;
+}
+
+html[data-theme="light"] [class~="border-[#0d1b15]"] {
+  border-color: #ffffff !important;
+}
+
+html[data-theme="light"] [class*="hover:bg-white/5"]:hover {
+  background-color: rgba(24, 83, 50, 0.065) !important;
+}
+
+html[data-theme="light"] [class*="placeholder:text-white/25"]::placeholder {
+  color: rgba(16, 32, 25, 0.34) !important;
+}
+
+html[data-theme="light"] .soft-scrollbar {
+  scrollbar-color: rgba(39, 129, 75, 0.24) transparent;
+}
+
+html[data-theme="light"] .soft-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(39, 129, 75, 0.24);
+}

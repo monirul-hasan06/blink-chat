@@ -18,7 +18,8 @@ export const authSchema = z.object({
 });
 
 export const messageSchema = z.object({
-  body: z.string().trim().min(1, "Message cannot be empty").max(1000, "Message is too long")
+  body: z.string().trim().min(1, "Message cannot be empty").max(1000, "Message is too long"),
+  replyToId: z.string().min(1).max(64).nullable().optional()
 });
 
 export const groupSchema = z.object({
