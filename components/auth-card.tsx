@@ -26,10 +26,21 @@ export function AuthCard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, pin })
       });
-      const data = await response.json();
+      const responseText = await response.text();
+      let data: { error?: string } = {};
+
+      if (responseText) {
+        try {
+          data = JSON.parse(responseText) as { error?: string };
+        } catch {
+          throw new Error(
+            `The server returned an invalid response (${response.status}). Check the Vercel runtime logs.`
+          );
+        }
+      }
 
       if (!response.ok) {
-        throw new Error(data.error ?? "Could not continue");
+        throw new Error(data.error ?? `Request failed (${response.status})`);
       }
 
       router.push("/chat");

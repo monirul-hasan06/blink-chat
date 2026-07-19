@@ -2,6 +2,51 @@
 
 Blink is a small, mobile-first, text-only private messaging app.
 
+## Important first deployment fix
+
+The database schema must exist before account creation can work. This version includes an initial Prisma migration and runs it during the Vercel build.
+
+### Required Vercel environment variables
+
+Create a Neon project, open **Connect**, and copy both connection strings:
+
+- `DATABASE_URL`: pooled URL; its hostname contains `-pooler`
+- `DIRECT_URL`: direct URL; its hostname does not contain `-pooler`
+- `AUTH_SECRET`: first random 64-character hexadecimal value
+- `CRON_SECRET`: second, different random 64-character hexadecimal value
+
+Generate each secret with:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Add all four variables in Vercel for Production, Preview, and Development. Do not include quotation marks in the Vercel form. Redeploy after adding or changing variables.
+
+The build command is:
+
+```bash
+prisma generate && prisma migrate deploy && next build
+```
+
+The initial migration creates the `User` and `Message` tables automatically.
+
+### Verify the deployed database
+
+After deployment, open:
+
+```text
+https://YOUR-DOMAIN.vercel.app/api/health
+```
+
+A correct setup returns:
+
+```json
+{"ok":true,"database":"connected","schema":"ready"}
+```
+
+If `schema` is `missing`, inspect the Vercel build log for `prisma migrate deploy`. If the endpoint returns status 503, recheck the Neon URLs and redeploy.
+
 ## Included features
 
 - Account creation with only a username and 4–8 digit PIN
@@ -16,47 +61,25 @@ Blink is a small, mobile-first, text-only private messaging app.
 - Secure HTTP-only session cookie
 - Hashed PINs using bcrypt
 
-## Stack
-
-- Next.js 15 App Router
-- TypeScript
-- Tailwind CSS
-- Prisma ORM
-- PostgreSQL
-- Vercel Cron
-
-## Run locally
+## Local setup
 
 1. Install Node.js 22.
-2. Open the project in VS Code.
-3. Install dependencies:
+2. Copy `.env.example` to `.env`.
+3. Fill all four values.
+4. Install dependencies:
 
 ```bash
-npm ci
+npm ci --ignore-scripts --no-audit --no-fund
 ```
 
-4. Copy the environment file:
+5. Generate Prisma Client and apply migrations:
 
 ```bash
-cp .env.example .env
+npx prisma generate
+npx prisma migrate deploy
 ```
 
-5. Add a PostgreSQL connection string. Neon and Supabase both work.
-6. Generate strong secrets:
-
-```bash
-openssl rand -base64 32
-```
-
-Use separate generated values for `AUTH_SECRET` and `CRON_SECRET`.
-
-7. Create the database tables:
-
-```bash
-npm run db:push
-```
-
-8. Start development:
+6. Start the app:
 
 ```bash
 npm run dev
@@ -65,9 +88,6 @@ npm run dev
 Open `http://localhost:3000`.
 
 ## Deploy to GitHub and Vercel
-
-1. Create a new empty GitHub repository.
-2. From this project folder run:
 
 ```bash
 git init
@@ -78,32 +98,10 @@ git remote add origin YOUR_GITHUB_REPOSITORY_URL
 git push -u origin main
 ```
 
-3. Import the GitHub repository into Vercel.
-4. Add these environment variables in Vercel:
-
-- `DATABASE_URL`
-- `AUTH_SECRET`
-- `CRON_SECRET`
-
-5. Before the first deployment, run `npm run db:push` locally with the production database URL, or use a Prisma migration workflow.
-6. Deploy. The included `vercel.json` runs cleanup once each day.
-
-## Vercel install fix
-
-This project forces dependency downloads through the public npm registry and uses a clean, script-free install on Vercel:
-
-```bash
-npm ci --ignore-scripts --no-audit --no-fund
-```
-
-Prisma Client generation runs afterward as part of `npm run build`. This avoids npm becoming stuck inside Prisma install-time hooks. If the Vercel project has a dashboard-level Install Command override, remove it or set it to the command above, then redeploy without using the previous build cache.
+Import the repository into Vercel, add the four environment variables, and deploy. The included `vercel.json` uses a clean npm installation and runs cleanup once each day.
 
 ## Message deletion behavior
 
 A received message is marked as seen when the recipient opens that conversation. At that moment, `expiresAt` is set to 24 hours later. The daily cleanup route permanently deletes expired message rows from the active database.
 
-Database providers may retain backups according to their own backup policy. Review and configure your provider's retention settings before making strict privacy claims.
-
-## Before a public launch
-
-This is intentionally a small project. For a public service with many users, add distributed rate limiting, abuse reporting, account recovery rules, monitoring, database migrations, and automated tests.
+Database providers may retain backups according to their own backup policy.
