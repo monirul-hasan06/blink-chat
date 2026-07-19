@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { deleteUserAndTransferGroups } from "@/lib/account";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
@@ -14,18 +15,27 @@ export async function GET(request: Request) {
   const oneYearAgo = new Date(now);
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
-  const [expiredMessages, inactiveUsers] = await prisma.$transaction([
-    prisma.message.deleteMany({
-      where: { expiresAt: { lte: now } }
-    }),
-    prisma.user.deleteMany({
-      where: { lastActiveAt: { lte: oneYearAgo } }
+  const [expiredDirectMessages, expiredGroupMessages, expiredTyping, inactiveUsers] = await Promise.all([
+    prisma.message.deleteMany({ where: { expiresAt: { lte: now } } }),
+    prisma.groupMessage.deleteMany({ where: { expiresAt: { lte: now } } }),
+    prisma.typingStatus.deleteMany({ where: { expiresAt: { lte: now } } }),
+    prisma.user.findMany({
+      where: { lastActiveAt: { lte: oneYearAgo } },
+      select: { id: true }
     })
   ]);
 
+  let deletedUsers = 0;
+  for (const user of inactiveUsers) {
+    await deleteUserAndTransferGroups(user.id);
+    deletedUsers += 1;
+  }
+
   return NextResponse.json({
-    deletedMessages: expiredMessages.count,
-    deletedUsers: inactiveUsers.count,
+    deletedDirectMessages: expiredDirectMessages.count,
+    deletedGroupMessages: expiredGroupMessages.count,
+    deletedTypingStatuses: expiredTyping.count,
+    deletedUsers,
     ranAt: now.toISOString()
   });
 }

@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 import { prisma } from "@/lib/prisma";
+import { onlineUntilFromNow } from "@/lib/presence";
 
 const COOKIE_NAME = "blink_session";
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 30;
@@ -61,18 +62,33 @@ export async function getCurrentUser() {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, username: true, lastActiveAt: true }
+    select: { id: true, username: true, lastActiveAt: true, onlineUntil: true }
   });
 
   if (!user) return null;
 
-  const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
-  if (user.lastActiveAt < fifteenMinutesAgo) {
-    await prisma.user.update({
+  const now = new Date();
+  const shouldTouch = user.onlineUntil.getTime() < now.getTime() + 15_000;
+
+  if (shouldTouch) {
+    const updated = await prisma.user.update({
       where: { id: user.id },
-      data: { lastActiveAt: new Date() }
+      data: { lastActiveAt: now, onlineUntil: onlineUntilFromNow(now) },
+      select: { id: true, username: true, lastActiveAt: true, onlineUntil: true }
     });
+    return updated;
   }
 
-  return { id: user.id, username: user.username };
+  return user;
+}
+
+export async function setCurrentUserOffline() {
+  const userId = await getSessionUserId();
+  if (!userId) return;
+
+  const now = new Date();
+  await prisma.user.update({
+    where: { id: userId },
+    data: { lastActiveAt: now, onlineUntil: now }
+  }).catch(() => undefined);
 }

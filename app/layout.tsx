@@ -4,7 +4,7 @@ import { PwaRegister } from "@/components/pwa-register";
 
 export const metadata: Metadata = {
   title: "Blink — private text chat",
-  description: "Minimal private messaging. Text only. Messages disappear 24 hours after being seen.",
+  description: "Private text messaging with groups, presence and disappearing messages.",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [

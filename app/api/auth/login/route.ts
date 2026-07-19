@@ -4,6 +4,7 @@ import { createSession } from "@/lib/auth";
 import { handleRouteError, jsonError } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
 import { authSchema } from "@/lib/validation";
+import { onlineUntilFromNow } from "@/lib/presence";
 
 export async function POST(request: Request) {
   try {
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { lastActiveAt: new Date() }
+      data: { lastActiveAt: new Date(), onlineUntil: onlineUntilFromNow() }
     });
 
     await createSession(user.id);

@@ -1,107 +1,125 @@
 # Blink
 
-Blink is a small, mobile-first, text-only private messaging app.
+Blink is a mobile-first, text-only private messaging PWA built with Next.js, TypeScript, Prisma and PostgreSQL.
 
-## Important first deployment fix
+## Features
 
-The database schema must exist before account creation can work. This version includes an initial Prisma migration and runs it during the Vercel build.
+- Username and 4–8 digit PIN signup/login
+- One-to-one text messaging
+- Seen messages deleted 24 hours later
+- Delete an entire direct chat for both users
+- Block/unblock users; either direction disables direct messages
+- Create groups, invite users, accept or decline invites, and leave groups
+- Group owner can clear group history
+- Online/offline status, last seen and typing indicators
+- Web Push notifications
+- Custom short “blink” sound while the app is open
+- Installable PWA with responsive phone and desktop layouts
+- Account deletion with an “Are you sure?” confirmation
+- Automatic deletion after one year of inactivity
 
-### Required Vercel environment variables
+## Important notification limitation
 
-Create a Neon project, open **Connect**, and copy both connection strings:
+Web browsers do not provide a standard way for a PWA to select a custom sound for a background system notification. Blink plays `public/sounds/blink.wav` while the app is open and focused. When the app is closed or in the background, the phone or browser uses its normal notification sound.
 
-- `DATABASE_URL`: pooled URL; its hostname contains `-pooler`
-- `DIRECT_URL`: direct URL; its hostname does not contain `-pooler`
-- `AUTH_SECRET`: first random 64-character hexadecimal value
-- `CRON_SECRET`: second, different random 64-character hexadecimal value
+On iPhone and iPad, install Blink on the Home Screen before enabling push notifications.
 
-Generate each secret with:
+## Required environment variables
+
+Create a Neon PostgreSQL project and add these values locally in `.env` and in Vercel Project Settings → Environment Variables:
+
+```env
+DATABASE_URL="pooled Neon URL containing -pooler"
+DIRECT_URL="direct Neon URL without -pooler"
+AUTH_SECRET="first random secret"
+CRON_SECRET="second different random secret"
+NEXT_PUBLIC_VAPID_PUBLIC_KEY="VAPID public key"
+VAPID_PRIVATE_KEY="VAPID private key"
+VAPID_SUBJECT="mailto:your-email@example.com"
+```
+
+Generate `AUTH_SECRET` and `CRON_SECRET` separately:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-Add all four variables in Vercel for Production, Preview, and Development. Do not include quotation marks in the Vercel form. Redeploy after adding or changing variables.
-
-The build command is:
+Generate the VAPID pair once:
 
 ```bash
-prisma generate && prisma migrate deploy && next build
+npx web-push generate-vapid-keys --json
 ```
 
-The initial migration creates the `User` and `Message` tables automatically.
-
-### Verify the deployed database
-
-After deployment, open:
-
-```text
-https://YOUR-DOMAIN.vercel.app/api/health
-```
-
-A correct setup returns:
-
-```json
-{"ok":true,"database":"connected","schema":"ready"}
-```
-
-If `schema` is `missing`, inspect the Vercel build log for `prisma migrate deploy`. If the endpoint returns status 503, recheck the Neon URLs and redeploy.
-
-## Included features
-
-- Account creation with only a username and 4–8 digit PIN
-- Login with username and PIN
-- Username search
-- One-to-one text messaging
-- Incoming messages are marked as seen when their conversation is opened
-- Seen messages expire 24 hours later
-- Accounts are deleted after one year without activity
-- Installable PWA for phones and desktops
-- Responsive mobile and desktop interface
-- Secure HTTP-only session cookie
-- Hashed PINs using bcrypt
+Keep the VAPID private key private. Do not regenerate the pair after users subscribe unless you expect them to enable notifications again.
 
 ## Local setup
 
-1. Install Node.js 22.
-2. Copy `.env.example` to `.env`.
-3. Fill all four values.
-4. Install dependencies:
+Use Node.js 22 and npm 10.
 
 ```bash
+cp .env.example .env
 npm ci --ignore-scripts --no-audit --no-fund
-```
-
-5. Generate Prisma Client and apply migrations:
-
-```bash
 npx prisma generate
 npx prisma migrate deploy
-```
-
-6. Start the app:
-
-```bash
 npm run dev
 ```
 
 Open `http://localhost:3000`.
 
-## Deploy to GitHub and Vercel
+## Vercel deployment
+
+1. Push the project to GitHub.
+2. Import the repository into Vercel.
+3. Add all seven environment variables for Production, Preview and Development.
+4. Deploy.
+
+The included build command runs:
 
 ```bash
-git init
-git add .
-git commit -m "Initial Blink app"
-git branch -M main
-git remote add origin YOUR_GITHUB_REPOSITORY_URL
-git push -u origin main
+prisma generate && prisma migrate deploy && next build
 ```
 
-Import the repository into Vercel, add the four environment variables, and deploy. The included `vercel.json` uses a clean npm installation and runs cleanup once each day.
+The migration creates the direct-message, group, invitation, block, presence, typing and push-subscription tables.
 
-## Message deletion behavior
+After deployment, verify:
 
-A received message is marked as seen when the recipient opens that conversation. At that moment, `expiresAt` is set to 24 hours later. The daily cleanup route permanently deletes expired message rows from the active database.
+```text
+https://YOUR-DOMAIN.vercel.app/api/health
+```
 
-Database providers may retain backups according to their own backup policy.
+Expected response:
+
+```json
+{
+  "ok": true,
+  "database": "connected",
+  "schema": "ready",
+  "notificationsConfigured": true
+}
+```
+
+If `notificationsConfigured` is false, recheck the three VAPID variables and redeploy.
+
+## PWA notification setup for users
+
+1. Log in to Blink.
+2. Tap the bell icon.
+3. Allow notifications.
+4. On iOS/iPadOS, add Blink to the Home Screen first, open the installed app, then tap the bell.
+
+## Message expiry
+
+Direct messages are marked seen when the receiver opens the conversation, then get an expiry time 24 hours later.
+
+Group messages create one receipt for every other member. After all receipt holders have opened the group, the message gets an expiry time 24 hours later.
+
+The Vercel cron route permanently removes expired direct and group messages once per day. Database-provider backups may retain older copies according to the provider’s own backup policy.
+
+## Notes about real-time status
+
+Blink stays Vercel-friendly by using short polling rather than a dedicated WebSocket server:
+
+- Open conversations refresh about every 2.5 seconds.
+- Conversation/group lists refresh about every 5 seconds.
+- Presence heartbeats run about every 20 seconds.
+- Typing status expires automatically after six seconds.
