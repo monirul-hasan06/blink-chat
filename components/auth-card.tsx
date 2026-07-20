@@ -58,7 +58,7 @@ export function AuthCard() {
   }
 
   return (
-    <div className="glass w-full max-w-md rounded-[2rem] p-3 shadow-glow">
+    <div className="glass w-full max-w-md rounded-[1.5rem] p-2 shadow-glow sm:rounded-[2rem] sm:p-3">
       <div className="grid grid-cols-2 gap-2 rounded-2xl bg-input p-1.5">
         <button
           type="button"
@@ -80,12 +80,12 @@ export function AuthCard() {
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4 p-4 pt-6">
+      <form onSubmit={handleSubmit} className="space-y-3 p-3 pt-4 sm:space-y-4 sm:p-4 sm:pt-6">
         <div>
           <label htmlFor="username" className="mb-2 block text-sm text-secondary">
             Username
           </label>
-          <div className="flex items-center gap-3 rounded-2xl border border-theme bg-input px-4 focus-accent">
+          <div className="text-field flex items-center gap-3 rounded-2xl border border-theme bg-input px-3.5 sm:px-4">
             <UserRound size={18} className="text-muted" />
             <input
               id="username"
@@ -113,7 +113,7 @@ export function AuthCard() {
           <label htmlFor="pin" className="mb-2 block text-sm text-secondary">
             PIN
           </label>
-          <div className="flex items-center gap-3 rounded-2xl border border-theme bg-input px-4 focus-accent">
+          <div className="text-field flex items-center gap-3 rounded-2xl border border-theme bg-input px-3.5 sm:px-4">
             <LockKeyhole size={18} className="text-muted" />
             <input
               id="pin"

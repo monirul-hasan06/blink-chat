@@ -1,4 +1,4 @@
-const CACHE_NAME = "blink-static-v5";
+const CACHE_NAME = "blink-static-v6";
 const STATIC_ASSETS = [
   "/manifest.webmanifest",
   "/icons/icon-192.png",
@@ -47,6 +47,26 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
+async function updateAppBadge() {
+  try {
+    if (self.navigator && "setAppBadge" in self.navigator) {
+      await self.navigator.setAppBadge();
+    }
+  } catch {
+    // Badging is optional and unsupported in some browsers.
+  }
+}
+
+async function clearAppBadge() {
+  try {
+    if (self.navigator && "clearAppBadge" in self.navigator) {
+      await self.navigator.clearAppBadge();
+    }
+  } catch {
+    // Badging is optional and unsupported in some browsers.
+  }
+}
+
 self.addEventListener("push", (event) => {
   let payload = {};
   try {
@@ -58,6 +78,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil((async () => {
     const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     const focusedWindow = windows.find((client) => client.focused && client.visibilityState === "visible");
+
+    await updateAppBadge();
 
     if (focusedWindow) {
       focusedWindow.postMessage({ type: "BLINK_PUSH", payload });
@@ -71,10 +93,43 @@ self.addEventListener("push", (event) => {
       tag: payload.tag || `blink-message-${Date.now()}`,
       renotify: true,
       silent: false,
-      vibrate: [90, 60, 90],
+      vibrate: [100, 60, 100],
       timestamp: Date.now(),
       data: { url: payload.url || "/chat" }
     });
+  })());
+});
+
+self.addEventListener("pushsubscriptionchange", (event) => {
+  event.waitUntil((async () => {
+    try {
+      const configResponse = await fetch("/api/push/subscribe", {
+        cache: "no-store",
+        credentials: "same-origin"
+      });
+      if (!configResponse.ok) return;
+      const config = await configResponse.json();
+      if (!config.configured || !config.publicKey) return;
+
+      const padding = "=".repeat((4 - (config.publicKey.length % 4)) % 4);
+      const base64 = (config.publicKey + padding).replace(/-/g, "+").replace(/_/g, "/");
+      const raw = self.atob(base64);
+      const applicationServerKey = Uint8Array.from([...raw].map((character) => character.charCodeAt(0)));
+
+      const subscription = await self.registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey
+      });
+
+      await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(subscription.toJSON())
+      });
+    } catch {
+      // The foreground app retries subscription repair on the next open.
+    }
   })());
 });
 
@@ -83,6 +138,7 @@ self.addEventListener("notificationclick", (event) => {
   const targetUrl = new URL(event.notification.data?.url || "/chat", self.location.origin).href;
 
   event.waitUntil((async () => {
+    await clearAppBadge();
     const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     const existing = windows.find((client) => client.url.startsWith(self.location.origin));
     if (existing) {

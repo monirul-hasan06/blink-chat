@@ -8,6 +8,12 @@ export interface PushPayload {
   tag: string;
 }
 
+export interface PushDeliveryResult {
+  configured: boolean;
+  attempted: number;
+  delivered: number;
+}
+
 let configured = false;
 
 function configureWebPush() {
@@ -26,15 +32,19 @@ function configureWebPush() {
   return true;
 }
 
-export async function sendPushToUser(userId: string, payload: PushPayload) {
-  if (!configureWebPush()) return;
+export async function sendPushToUser(userId: string, payload: PushPayload): Promise<PushDeliveryResult> {
+  if (!configureWebPush()) {
+    return { configured: false, attempted: 0, delivered: 0 };
+  }
 
   const subscriptions = await prisma.pushSubscription.findMany({
     where: { userId },
     select: { id: true, endpoint: true, p256dh: true, auth: true }
   });
 
-  await Promise.allSettled(
+  let delivered = 0;
+
+  await Promise.all(
     subscriptions.map(async (subscription: { id: string; endpoint: string; p256dh: string; auth: string }) => {
       try {
         await webpush.sendNotification(
@@ -46,8 +56,9 @@ export async function sendPushToUser(userId: string, payload: PushPayload) {
             }
           },
           JSON.stringify(payload),
-          { TTL: 60 * 60 * 24, urgency: "high" }
+          { TTL: 60 * 60 * 24, urgency: "high", topic: payload.tag.slice(0, 32) }
         );
+        delivered += 1;
       } catch (error) {
         const statusCode =
           typeof error === "object" && error !== null && "statusCode" in error
@@ -63,4 +74,10 @@ export async function sendPushToUser(userId: string, payload: PushPayload) {
       }
     })
   );
+
+  return {
+    configured: true,
+    attempted: subscriptions.length,
+    delivered
+  };
 }

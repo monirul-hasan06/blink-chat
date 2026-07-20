@@ -50,6 +50,7 @@
   --offline-dot: rgba(255, 255, 255, 0.25);
   --panel-outline: #0d1b15;
   --shadow: 0 22px 70px rgba(0, 0, 0, 0.26);
+  --focus-ring: rgba(213, 231, 219, 0.7);
 }
 
 html[data-theme="light"] {
@@ -98,6 +99,7 @@ html[data-theme="light"] {
   --offline-dot: #91a49a;
   --panel-outline: #ffffff;
   --shadow: 0 22px 70px rgba(18, 67, 41, 0.13);
+  --focus-ring: rgba(49, 70, 58, 0.55);
 
   color-scheme: light;
 }
@@ -138,19 +140,42 @@ textarea {
   font: inherit;
 }
 
-button {
+button,
+input,
+textarea {
   -webkit-tap-highlight-color: transparent;
 }
 
-button:focus-visible,
+input,
+textarea {
+  caret-color: var(--text);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 input:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid var(--accent-text);
-  outline-offset: 2px;
+  outline: none;
 }
 
 ::selection {
   background: var(--accent-border);
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text);
+  box-shadow: 0 0 0 1000px var(--surface-input) inset;
+  transition: background-color 9999s ease-out;
 }
 
 .safe-bottom {
@@ -213,7 +238,10 @@ textarea:focus-visible {
 .hover-text-danger:hover { color: var(--danger-text); }
 .hover-accent:hover { background-color: var(--accent-fill-hover); }
 .hover-danger-soft:hover { background-color: var(--danger-soft); }
-.focus-accent:focus-within { border-color: var(--accent-border); }
+.focus-accent:focus-within,
+.text-field:focus-within {
+  border-color: var(--line-strong);
+}
 .placeholder-faint::placeholder { color: var(--text-faint); }
 
 .soft-scrollbar {
@@ -239,6 +267,14 @@ textarea:focus-visible {
   animation: blink-pulse 2s ease-in-out infinite;
 }
 
+
+@media (max-width: 420px) {
+  .glass {
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -249,4 +285,4 @@ textarea:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
-.focus-border-accent:focus { border-color: var(--accent-border); }
+.focus-border-accent:focus { border-color: var(--line-strong); }

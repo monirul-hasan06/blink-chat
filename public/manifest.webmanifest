@@ -1,12 +1,15 @@
 {
+  "id": "/",
   "name": "Blink — Private Text Chat",
   "short_name": "Blink",
   "description": "Minimal private messaging. Text only. Messages disappear 24 hours after being seen.",
-  "start_url": "/",
+  "start_url": "/chat",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
   "background_color": "#07110d",
   "theme_color": "#07110d",
-  "orientation": "portrait-primary",
+  "categories": ["social", "communication"],
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -25,6 +28,14 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open chats",
+      "short_name": "Chats",
+      "url": "/chat",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

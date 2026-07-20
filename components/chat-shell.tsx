@@ -27,6 +27,7 @@ import {
   Users,
   X
 } from "lucide-react";
+import { InstallAppCard } from "@/components/install-button";
 import { useRouter } from "next/navigation";
 import { FormEvent, PointerEvent as ReactPointerEvent, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -174,7 +175,7 @@ function PresenceDot({ online }: { online?: boolean }) {
 function Modal({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-end bg-overlay p-0 backdrop-blur-sm sm:place-items-center sm:p-5" onMouseDown={onClose}>
-      <div className="safe-bottom glass w-full max-w-md rounded-t-[2rem] border-theme p-5 sm:rounded-[2rem]" onMouseDown={(event) => event.stopPropagation()}>
+      <div className="safe-bottom soft-scrollbar glass max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-[2rem] border-theme p-5 sm:rounded-[2rem]" onMouseDown={(event) => event.stopPropagation()}>
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-base font-semibold">{title}</h2>
           <button type="button" onClick={onClose} className="rounded-xl p-2 text-muted hover-surface hover-text-main" aria-label="Close">
@@ -201,6 +202,18 @@ function subscriptionUsesKey(subscription: PushSubscription, publicKey: string) 
   const current = new Uint8Array(currentKey);
   if (current.length !== expected.length) return false;
   return current.every((value, index) => value === expected[index]);
+}
+
+async function getServiceWorkerRegistration() {
+  const existing = await navigator.serviceWorker.getRegistration();
+  if (existing) return existing;
+
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise<never>((_resolve, reject) => {
+      window.setTimeout(() => reject(new Error("The Blink service worker is not ready. Reload the app and try again.")), 10_000);
+    })
+  ]);
 }
 
 export function ChatShell({ currentUser }: { currentUser: UserSummary }) {
@@ -240,6 +253,8 @@ export function ChatShell({ currentUser }: { currentUser: UserSummary }) {
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [notificationState, setNotificationState] = useState<NotificationState>("checking");
+  const [notificationPromptOpen, setNotificationPromptOpen] = useState(false);
+  const [testingNotification, setTestingNotification] = useState(false);
   const [pushNotice, setPushNotice] = useState<PushNotice | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -275,6 +290,71 @@ export function ChatShell({ currentUser }: { currentUser: UserSummary }) {
     audioRef.current.currentTime = 0;
     void audioRef.current.play().catch(() => undefined);
   }, []);
+
+  const syncNotifications = useCallback(async ({ requestPermission = false, confirmationSound = false } = {}) => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+      setNotificationState("unsupported");
+      return false;
+    }
+
+    const preference = window.localStorage.getItem("blink-notifications-preference");
+    if (preference === "off" && !requestPermission) {
+      setNotificationState("disabled");
+      return false;
+    }
+
+    let permission = Notification.permission;
+    if (permission === "default" && requestPermission) {
+      permission = await Notification.requestPermission();
+    }
+
+    if (permission !== "granted") {
+      setNotificationState(permission === "denied" ? "blocked" : "disabled");
+      return false;
+    }
+
+    const configResponse = await fetch("/api/push/subscribe", { cache: "no-store" });
+    if (handleUnauthorized(configResponse)) return false;
+    const config = await readJson<{ configured?: boolean; publicKey?: string | null; error?: string }>(configResponse);
+    if (!configResponse.ok || !config.configured || !config.publicKey) {
+      throw new Error(config.error ?? "Push notification keys are not configured in Vercel");
+    }
+
+    const registration = await getServiceWorkerRegistration();
+    let subscription = await registration.pushManager.getSubscription();
+
+    if (subscription && !subscriptionUsesKey(subscription, config.publicKey)) {
+      await subscription.unsubscribe();
+      subscription = null;
+    }
+
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(config.publicKey) as BufferSource
+      });
+    }
+
+    const saveResponse = await fetch("/api/push/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(subscription.toJSON())
+    });
+    if (handleUnauthorized(saveResponse)) return false;
+    const saveData = await readJson<{ error?: string }>(saveResponse);
+    if (!saveResponse.ok) throw new Error(saveData.error ?? "Could not save notification subscription");
+
+    window.localStorage.setItem("blink-notifications-preference", "on");
+    setNotificationState("enabled");
+    setNotificationPromptOpen(false);
+    if (confirmationSound) playBlink();
+
+    if ("storage" in navigator && "persist" in navigator.storage) {
+      void navigator.storage.persist().catch(() => false);
+    }
+
+    return true;
+  }, [handleUnauthorized, playBlink]);
 
   const loadOverview = useCallback(async (quiet = false) => {
     if (quiet && document.visibilityState !== "visible") return;
@@ -517,76 +597,70 @@ export function ChatShell({ currentUser }: { currentUser: UserSummary }) {
   }, [directMessages.length, groupMessages.length, selected?.type]);
 
   useEffect(() => {
-    async function checkNotifications() {
-      if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
-        setNotificationState("unsupported");
-        return;
-      }
-      if (Notification.permission === "denied") {
-        setNotificationState("blocked");
-        return;
-      }
-      const registration = await navigator.serviceWorker.ready;
-      let subscription = await registration.pushManager.getSubscription();
-      if (!subscription) {
-        setNotificationState("disabled");
-        return;
-      }
+    void syncNotifications().catch(() => setNotificationState("error"));
 
-      const configResponse = await fetch("/api/push/subscribe", { cache: "no-store" });
-      const config = await readJson<{ configured?: boolean; publicKey?: string | null }>(configResponse);
-      if (!configResponse.ok || !config.configured || !config.publicKey) {
-        setNotificationState("error");
-        return;
-      }
-
-      // If the VAPID pair changed, replace the browser subscription with one
-      // created from the current public key.
-      if (!subscriptionUsesKey(subscription, config.publicKey)) {
-        await subscription.unsubscribe();
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(config.publicKey) as BufferSource
-        });
-      }
-
-      // Re-associate this device with the currently logged-in account. This
-      // repairs notification delivery after logout/login and server redeploys.
-      const saveResponse = await fetch("/api/push/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(subscription.toJSON())
-      });
-      setNotificationState(saveResponse.ok ? "enabled" : "error");
-    }
-    void checkNotifications().catch(() => setNotificationState("error"));
-
-    const receivePush = (event: MessageEvent<{ type?: string; payload?: PushNotice }>) => {
-      if (event.data?.type === "BLINK_PUSH") {
-        const payload = event.data.payload ?? {
-          title: "Blink",
-          body: "You received a new message",
-          url: "/chat"
-        };
-        setPushNotice(payload);
-        if (pushNoticeTimerRef.current) window.clearTimeout(pushNoticeTimerRef.current);
-        pushNoticeTimerRef.current = window.setTimeout(() => setPushNotice(null), 5_000);
-        playBlink();
-        void loadOverview(true);
-        const active = selectedRef.current;
-        if (active?.type === "direct") {
-          suppressNextIncomingSoundRef.current = true;
-          void loadDirect(active.user.id, true);
-        }
-        if (active?.type === "group") {
-          suppressNextIncomingSoundRef.current = true;
-          void loadGroup(active.group.id, true);
-        }
+    const repairNotifications = () => {
+      if (!("Notification" in window)) return;
+      if (document.visibilityState === "visible" && Notification.permission === "granted") {
+        void syncNotifications().catch(() => setNotificationState("error"));
       }
     };
+
+    const receivePush = (event: MessageEvent<{ type?: string; payload?: PushNotice }>) => {
+      if (event.data?.type !== "BLINK_PUSH") return;
+
+      const payload = event.data.payload ?? {
+        title: "Blink",
+        body: "You received a new message",
+        url: "/chat"
+      };
+      setPushNotice(payload);
+      if (pushNoticeTimerRef.current) window.clearTimeout(pushNoticeTimerRef.current);
+      pushNoticeTimerRef.current = window.setTimeout(() => setPushNotice(null), 5_000);
+      playBlink();
+      void loadOverview(true);
+      const active = selectedRef.current;
+      if (active?.type === "direct") {
+        suppressNextIncomingSoundRef.current = true;
+        void loadDirect(active.user.id, true);
+      }
+      if (active?.type === "group") {
+        suppressNextIncomingSoundRef.current = true;
+        void loadGroup(active.group.id, true);
+      }
+    };
+
+    const clearBadge = () => {
+      if (document.visibilityState === "visible" && "clearAppBadge" in navigator) {
+        void (navigator as Navigator & { clearAppBadge: () => Promise<void> }).clearAppBadge().catch(() => undefined);
+      }
+    };
+
+    window.addEventListener("online", repairNotifications);
+    document.addEventListener("visibilitychange", repairNotifications);
+    document.addEventListener("visibilitychange", clearBadge);
+    navigator.serviceWorker?.addEventListener("controllerchange", repairNotifications);
     navigator.serviceWorker?.addEventListener("message", receivePush);
-    return () => navigator.serviceWorker?.removeEventListener("message", receivePush);
-  }, [loadDirect, loadGroup, loadOverview, playBlink]);
+    clearBadge();
+
+    return () => {
+      window.removeEventListener("online", repairNotifications);
+      document.removeEventListener("visibilitychange", repairNotifications);
+      document.removeEventListener("visibilitychange", clearBadge);
+      navigator.serviceWorker?.removeEventListener("controllerchange", repairNotifications);
+      navigator.serviceWorker?.removeEventListener("message", receivePush);
+    };
+  }, [loadDirect, loadGroup, loadOverview, playBlink, syncNotifications]);
+
+  useEffect(() => {
+    if (notificationState !== "disabled") return;
+    if (!("Notification" in window) || Notification.permission !== "default") return;
+    if (window.localStorage.getItem("blink-notifications-preference") === "off") return;
+    if (window.sessionStorage.getItem("blink-notification-prompt-dismissed") === "true") return;
+
+    const timer = window.setTimeout(() => setNotificationPromptOpen(true), 700);
+    return () => window.clearTimeout(timer);
+  }, [notificationState]);
 
   const selectDirect = useCallback((user: UserSummary) => {
     previousIncomingId.current = null;
@@ -891,41 +965,8 @@ export function ChatShell({ currentUser }: { currentUser: UserSummary }) {
 
   async function enableNotifications() {
     try {
-      if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
-        setNotificationState("unsupported");
-        return;
-      }
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
-        setNotificationState(permission === "denied" ? "blocked" : "disabled");
-        return;
-      }
-      const configResponse = await fetch("/api/push/subscribe", { cache: "no-store" });
-      const config = await readJson<{ configured?: boolean; publicKey?: string | null; error?: string }>(configResponse);
-      if (!configResponse.ok || !config.configured || !config.publicKey) {
-        throw new Error(config.error ?? "Push notification keys are not configured in Vercel");
-      }
-      const registration = await navigator.serviceWorker.ready;
-      let subscription = await registration.pushManager.getSubscription();
-      if (subscription && !subscriptionUsesKey(subscription, config.publicKey)) {
-        await subscription.unsubscribe();
-        subscription = null;
-      }
-      if (!subscription) {
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(config.publicKey) as BufferSource
-        });
-      }
-      const saveResponse = await fetch("/api/push/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(subscription.toJSON())
-      });
-      const saveData = await readJson<{ error?: string }>(saveResponse);
-      if (!saveResponse.ok) throw new Error(saveData.error ?? "Could not save notification subscription");
-      setNotificationState("enabled");
-      playBlink();
+      setError("");
+      await syncNotifications({ requestPermission: true, confirmationSound: true });
     } catch (notificationError) {
       setNotificationState("error");
       setError(notificationError instanceof Error ? notificationError.message : "Could not enable notifications");
@@ -934,7 +975,8 @@ export function ChatShell({ currentUser }: { currentUser: UserSummary }) {
 
   async function disableNotifications() {
     try {
-      const registration = await navigator.serviceWorker.ready;
+      window.localStorage.setItem("blink-notifications-preference", "off");
+      const registration = await getServiceWorkerRegistration();
       const subscription = await registration.pushManager.getSubscription();
       if (subscription) {
         await fetch("/api/push/subscribe", {
@@ -945,8 +987,24 @@ export function ChatShell({ currentUser }: { currentUser: UserSummary }) {
         await subscription.unsubscribe();
       }
       setNotificationState("disabled");
+      setNotificationPromptOpen(false);
     } catch {
       setNotificationState("error");
+    }
+  }
+
+  async function testNotifications() {
+    setTestingNotification(true);
+    setError("");
+    try {
+      const response = await fetch("/api/push/test", { method: "POST" });
+      if (handleUnauthorized(response)) return;
+      const data = await readJson<{ error?: string }>(response);
+      if (!response.ok) throw new Error(data.error ?? "Could not send the test notification");
+    } catch (testError) {
+      setError(testError instanceof Error ? testError.message : "Could not send the test notification");
+    } finally {
+      setTestingNotification(false);
     }
   }
 
@@ -971,7 +1029,7 @@ export function ChatShell({ currentUser }: { currentUser: UserSummary }) {
   async function logout() {
     try {
       if ("serviceWorker" in navigator) {
-        const registration = await navigator.serviceWorker.ready;
+        const registration = await getServiceWorkerRegistration();
         const subscription = await registration.pushManager.getSubscription();
         if (subscription) {
           await fetch("/api/push/subscribe", {
@@ -1006,7 +1064,7 @@ export function ChatShell({ currentUser }: { currentUser: UserSummary }) {
   const notificationsLabel = useMemo(() => ({
     checking: "Checking notifications…",
     unsupported: "Notifications are not supported here",
-    disabled: "Enable notifications",
+    disabled: "Notifications are off",
     blocked: "Notifications are blocked in browser settings",
     enabled: "Notifications enabled",
     error: "Notification setup needs attention"
@@ -1044,7 +1102,7 @@ export function ChatShell({ currentUser }: { currentUser: UserSummary }) {
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <button type="button" onClick={enableNotifications} aria-label={notificationsLabel} title={notificationsLabel} className="rounded-xl p-2.5 text-muted hover-surface hover-text-main">
+                <button type="button" onClick={() => notificationState === "enabled" ? setSettingsOpen(true) : void enableNotifications()} aria-label={notificationsLabel} title={notificationsLabel} className="rounded-xl p-2.5 text-muted hover-surface hover-text-main">
                   {notificationState === "enabled" ? <BellRing size={18} className="text-accent" /> : <Bell size={18} />}
                 </button>
                 <button type="button" onClick={() => setCreateGroupOpen(true)} aria-label="Create group" className="rounded-xl p-2.5 text-muted hover-surface hover-text-main">
@@ -1068,7 +1126,7 @@ export function ChatShell({ currentUser }: { currentUser: UserSummary }) {
             {(notificationState === "disabled" || notificationState === "error") && (
               <button type="button" onClick={enableNotifications} className="mt-3 flex w-full items-center gap-3 rounded-2xl border border-accent bg-accent-soft px-3.5 py-3 text-left">
                 <BellRing size={17} className="shrink-0 text-accent" />
-                <span className="min-w-0 flex-1"><span className="block text-xs font-medium text-accent">Enable message notifications</span><span className="mt-0.5 block text-[10px] leading-4 text-muted">Receive alerts when Blink is in the background or closed.</span></span>
+                <span className="min-w-0 flex-1"><span className="block text-xs font-medium text-accent">Enable message notifications</span><span className="mt-0.5 block text-[10px] leading-4 text-muted">One tap enables alerts for new direct and group messages.</span></span>
               </button>
             )}
             {notificationState === "blocked" && (
@@ -1076,7 +1134,7 @@ export function ChatShell({ currentUser }: { currentUser: UserSummary }) {
             )}
 
             {tab === "chats" && (
-              <div className="mt-3 flex items-center gap-3 rounded-2xl border border-theme bg-input px-3.5 focus-accent">
+              <div className="mt-3 flex items-center gap-3 rounded-2xl border border-theme bg-input px-3.5 text-field">
                 <Search size={17} className="text-muted" />
                 <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search a username" autoCapitalize="none" spellCheck={false} className="min-w-0 flex-1 bg-transparent py-3 text-[16px] outline-none placeholder-faint" />
                 {query && <button type="button" onClick={() => setQuery("")} aria-label="Clear search" className="text-muted hover-text-main"><X size={16} /></button>}
@@ -1242,7 +1300,7 @@ export function ChatShell({ currentUser }: { currentUser: UserSummary }) {
                       <button type="button" onClick={() => setReplyTarget(null)} aria-label="Cancel reply" className="rounded-lg p-1.5 text-muted hover-surface hover-text-main"><X size={15} /></button>
                     </div>
                   )}
-                  <div className="flex items-end gap-2 rounded-[1.5rem] border border-theme bg-input p-1.5 pl-4 focus-accent">
+                  <div className="flex items-end gap-2 rounded-[1.5rem] border border-theme bg-input p-1.5 pl-4 text-field">
                     <textarea data-message-composer="true" value={messageText} onChange={(event) => handleMessageChange(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} placeholder={canSend ? "Write a message..." : "Messaging is blocked"} disabled={!canSend} rows={1} className="max-h-32 min-h-10 min-w-0 flex-1 resize-none bg-transparent py-2 text-[16px] leading-6 outline-none placeholder-faint disabled:cursor-not-allowed" />
                     <button type="submit" disabled={!messageText.trim() || sending || !canSend} aria-label="Send message" className="grid size-11 shrink-0 place-items-center rounded-[1.15rem] bg-accent text-on-accent transition hover-accent disabled:cursor-not-allowed disabled:opacity-30">{sending ? <LoaderCircle size={18} className="animate-spin" /> : <Send size={18} />}</button>
                   </div>
@@ -1261,6 +1319,24 @@ export function ChatShell({ currentUser }: { currentUser: UserSummary }) {
 
       {membersModalOpen && selected?.type === "group" && <Modal title={`${selected.group.name} members`} onClose={() => setMembersModalOpen(false)}><div className="max-h-[60vh] space-y-1 overflow-y-auto">{groupMembers.map((member) => <div key={member.id} className="flex items-center gap-3 rounded-2xl px-3 py-3"><div className="relative"><InitialBadge label={member.username} small /><span className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-panel"><PresenceDot online={member.online} /></span></div><div className="min-w-0 flex-1"><div className="truncate text-sm">@{member.username}{member.id === currentUser.id ? " · you" : ""}</div><div className="mt-0.5 text-xs text-muted">{member.online ? "online" : formatLastSeen(member.lastSeenAt)}</div></div>{member.role === "OWNER" ? <span className="rounded-full border border-accent bg-accent-soft px-2 py-1 text-[10px] text-accent">Owner</span> : selected.group.role === "OWNER" && member.id !== currentUser.id ? <button type="button" disabled={removingMemberId === member.id} onClick={() => void removeGroupMember(member)} className="flex shrink-0 items-center gap-1.5 rounded-xl border border-danger bg-danger-soft px-2.5 py-2 text-[11px] text-danger disabled:opacity-50"><UserMinus size={14} />{removingMemberId === member.id ? "Removing…" : "Remove"}</button> : null}</div>)}</div>{selected.group.role === "OWNER" && <p className="mt-4 text-xs leading-5 text-faint">Only the group owner can remove members or delete the group.</p>}</Modal>}
 
+      {notificationPromptOpen && (
+        <Modal title="Turn on message notifications" onClose={() => {
+          window.sessionStorage.setItem("blink-notification-prompt-dismissed", "true");
+          setNotificationPromptOpen(false);
+        }}>
+          <div className="text-center">
+            <div className="mx-auto grid size-14 place-items-center rounded-2xl border border-accent bg-accent-soft text-accent"><BellRing size={24} /></div>
+            <p className="mt-4 text-sm leading-6 text-secondary">Get notified when someone sends you a direct or group message, even when Blink is in the background or closed.</p>
+            <p className="mt-2 text-xs leading-5 text-muted">Your browser will ask once. After permission is granted, Blink keeps notifications enabled and repairs the subscription automatically.</p>
+            <button type="button" onClick={() => void enableNotifications()} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-accent px-4 py-3.5 text-sm font-semibold text-on-accent"><BellRing size={17} />Turn on notifications</button>
+            <button type="button" onClick={() => {
+              window.sessionStorage.setItem("blink-notification-prompt-dismissed", "true");
+              setNotificationPromptOpen(false);
+            }} className="mt-2 w-full rounded-2xl px-4 py-3 text-sm text-muted hover-surface">Not now</button>
+          </div>
+        </Modal>
+      )}
+
       {settingsOpen && (
         <Modal title="Settings" onClose={() => setSettingsOpen(false)}>
           <div className="space-y-2">
@@ -1277,10 +1353,35 @@ export function ChatShell({ currentUser }: { currentUser: UserSummary }) {
                 <button type="button" onClick={() => applyTheme("dark")} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs transition ${theme === "dark" ? "bg-accent font-semibold text-on-accent" : "text-muted hover-surface"}`}><Moon size={15} />Dark</button>
               </div>
             </div>
-            <button type="button" onClick={notificationState === "enabled" ? disableNotifications : enableNotifications} disabled={notificationState === "unsupported" || notificationState === "blocked"} className="flex w-full items-center gap-3 rounded-2xl border border-theme bg-subtle px-4 py-4 text-left disabled:opacity-50">
-              {notificationState === "enabled" ? <BellRing size={19} className="text-accent" /> : <Bell size={19} className="text-muted" />}
-              <div className="min-w-0 flex-1"><div className="text-sm font-medium">{notificationsLabel}</div><div className="mt-1 text-xs leading-5 text-muted">The “blink” sound and an in-app alert play while Blink is open. In the background or when closed, the phone shows a push notification with its system notification sound.</div></div>
-            </button>
+            <div className="rounded-2xl border border-theme bg-subtle p-4">
+              <div className="flex items-start gap-3">
+                <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${notificationState === "enabled" ? "bg-accent-soft text-accent" : "bg-input text-muted"}`}>
+                  {notificationState === "enabled" ? <BellRing size={19} /> : <Bell size={19} />}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium">{notificationsLabel}</div>
+                  <div className="mt-1 text-xs leading-5 text-muted">
+                    Notifications are on by default after you allow them once. Blink automatically repairs the subscription when you reopen the app or reconnect to the internet.
+                  </div>
+                </div>
+              </div>
+              {notificationState === "enabled" ? (
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button type="button" disabled={testingNotification} onClick={() => void testNotifications()} className="flex items-center justify-center gap-2 rounded-xl bg-accent px-3 py-2.5 text-xs font-semibold text-on-accent disabled:opacity-60">
+                    {testingNotification ? <LoaderCircle size={15} className="animate-spin" /> : <BellRing size={15} />}
+                    Test alert
+                  </button>
+                  <button type="button" onClick={() => void disableNotifications()} className="rounded-xl border border-theme bg-input px-3 py-2.5 text-xs font-medium text-secondary hover-surface">Turn off</button>
+                </div>
+              ) : notificationState === "blocked" ? (
+                <div className="mt-3 rounded-xl border border-warning bg-warning-soft px-3 py-3 text-xs leading-5 text-warning">Notifications are blocked for this site. Open your browser or phone notification settings, allow Blink, then reopen the app.</div>
+              ) : notificationState === "unsupported" ? (
+                <div className="mt-3 rounded-xl border border-theme bg-input px-3 py-3 text-xs leading-5 text-muted">On iPhone, install Blink from Safari first, then open the installed app to enable notifications.</div>
+              ) : (
+                <button type="button" onClick={() => void enableNotifications()} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-3 py-2.5 text-xs font-semibold text-on-accent"><BellRing size={15} />Turn on notifications</button>
+              )}
+            </div>
+            <InstallAppCard />
             <button type="button" onClick={logout} className="flex w-full items-center gap-3 rounded-2xl border border-theme px-4 py-4 text-left text-secondary hover-surface"><LogOut size={19} /><div><div className="text-sm">Sign out</div><div className="mt-1 text-xs text-muted">You stay signed in on this device until you choose this option.</div></div></button>
             <button type="button" onClick={() => { setSettingsOpen(false); setDeleteAccountOpen(true); }} className="flex w-full items-center gap-3 rounded-2xl border border-danger bg-danger-soft px-4 py-4 text-left text-danger"><Trash2 size={19} /><div><div className="text-sm font-medium">Delete account</div><div className="mt-1 text-xs text-danger-muted">Permanently removes your account and messages.</div></div></button>
           </div>

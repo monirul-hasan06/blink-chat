@@ -15,9 +15,9 @@ Blink is a mobile-first, text-only private messaging PWA built with Next.js, Typ
 - Create groups, invite users, accept or decline invites, and leave groups
 - Group owner can clear group history, remove members and permanently delete the group
 - Online/offline status, last seen and typing indicators
-- Web Push notifications
+- Web Push notifications with automatic subscription repair and a built-in test alert
 - Custom short “blink” sound while the app is open
-- Installable PWA with responsive phone and desktop layouts
+- Installable PWA with a Settings installation control, iOS instructions and responsive phone/desktop layouts
 - Account deletion with an “Are you sure?” confirmation
 - Automatic deletion after one year of inactivity
 
@@ -105,10 +105,15 @@ If `notificationsConfigured` is false, recheck the three VAPID variables and red
 
 ## PWA notification setup for users
 
+Blink treats notifications as enabled by default, but browsers still require one explicit permission tap.
+
 1. Log in to Blink.
-2. Tap the bell icon.
-3. Allow notifications.
-4. On iOS/iPadOS, add Blink to the Home Screen first, open the installed app, then tap the bell.
+2. Use the automatic notification setup card, or open **Settings → Notifications**.
+3. Tap **Turn on notifications** and allow the browser prompt.
+4. Use **Test alert** in Settings to verify the device subscription.
+5. On iOS/iPadOS, install Blink from Safari first, open the Home Screen app, then enable notifications.
+
+After permission is granted, Blink automatically recreates missing subscriptions, repairs subscriptions after a VAPID-key deployment change, reattaches the device after login, retries after reconnecting to the internet, and handles `pushsubscriptionchange` in the service worker.
 
 ## Message expiry
 
@@ -130,7 +135,9 @@ Blink stays Vercel-friendly by using short polling rather than a dedicated WebSo
 
 ## Mobile app behavior
 
-Blink uses a responsive mobile-first layout and a web app manifest with `display: standalone`. After deployment over HTTPS, supported browsers can install it on a phone and launch it from the home screen without the normal browser chrome. Android browsers usually show an install prompt; on iPhone or iPad use Safari → Share → Add to Home Screen. Push notifications still require the user to allow notification permission, and iOS requires the installed Home Screen app.
+Blink uses a responsive mobile-first layout and a web app manifest with `display: standalone`. The login form is placed first on small screens, the page scrolls on short devices and landscape screens, form controls use 16px text to avoid iOS zoom, and dialogs scroll within the visible phone height.
+
+Open **Settings → Install Blink** to install it. On supported Android and desktop browsers, Blink opens the browser installation prompt. On iPhone or iPad, the same Settings card shows the Safari → Share → Add to Home Screen steps. The installed app opens at `/chat` and redirects to login only when there is no valid session.
 
 ## Persistent login
 
@@ -141,8 +148,11 @@ Blink stores the login in a secure HTTP-only cookie for up to 400 days and refre
 - When Blink is open and focused, the receiver gets an in-app notification banner and the custom `blink.wav` sound.
 - When Blink is in the background or closed, the service worker shows a system push notification with the device's enabled notification sound and vibration.
 - Push messages are retained by the push service for up to 24 hours when a subscribed device is temporarily offline.
-- Each user must tap the bell and grant permission once on each device.
-- Signing out detaches that device from the account so it does not keep receiving the previous user's messages. Logging in again automatically reattaches an existing browser subscription.
+- The app's default preference is notifications on. Browser permission still requires one user tap.
+- Granted subscriptions are checked and repaired when Blink opens, becomes visible, reconnects to the internet, or receives a new service-worker controller.
+- A `pushsubscriptionchange` handler attempts background renewal, and the foreground app provides a second repair path.
+- Settings includes **Test alert** so users can verify delivery without waiting for another account.
+- Signing out detaches that device from the account so it does not keep receiving the previous user's messages. Logging in again reattaches an existing browser subscription.
 
 
 ## Replying and deleting messages
@@ -160,3 +170,12 @@ Open **Settings → Appearance** to select Light or Dark. The choice is stored i
 The interface uses semantic color tokens rather than recoloring dark-mode utility classes. Light mode includes dedicated high-contrast text, muted text, accent, group, warning and destructive colors. The login screen also includes a theme toggle, and an existing authenticated session opens `/chat` instead of showing the login form again.
 
 API routes return JSON for handled database and request errors so the client does not try to parse plain server error pages. Leaving a group also removes that user's obsolete read receipts and typing state so old records do not delay message expiry.
+
+
+## Input focus and small-screen fixes
+
+Text fields no longer use the bright green focus outline. They keep a neutral high-contrast border, preserve keyboard accessibility on buttons, and normalize browser autofill colors. The public login page no longer uses `overflow: hidden`, so it cannot clip the form on short phones.
+
+## PWA cache reliability
+
+`sw.js` and the manifest are served with revalidation headers. The service worker caches only static app assets, never authenticated pages or API responses. This prevents an old login/chat page from being served after a deployment.
