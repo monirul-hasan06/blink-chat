@@ -179,3 +179,13 @@ Text fields no longer use the bright green focus outline. They keep a neutral hi
 ## PWA cache reliability
 
 `sw.js` and the manifest are served with revalidation headers. The service worker caches only static app assets, never authenticated pages or API responses. This prevents an old login/chat page from being served after a deployment.
+
+## Narrow-phone and notification-icon fix
+
+This revision prevents the public landing-page copy from widening beyond the phone viewport, including on devices that enlarge text. It also adds `public/icons/notification-badge.png`, a transparent monochrome Blink glyph used as the Android notification badge. Android may tint this small status icon according to the system theme; the full-color Blink icon remains the large notification icon.
+
+## Persistent-session Android PWA fix
+
+This release changes the login cookie from `SameSite=Strict` to a rolling, secure `SameSite=Lax` cookie. Installed Android PWAs can be launched by the operating system as an external top-level navigation; a Strict cookie may be omitted on that first request, which previously made Blink appear signed out after it was removed from Recents.
+
+The cookie now lasts for one year and is renewed whenever an authenticated user opens Blink. A client-side recovery check also upgrades valid cookies created by older Blink releases without asking the user to log in again. Removing Blink from Recents, closing the PWA, restarting the phone, or switching apps does not call the logout route.

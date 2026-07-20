@@ -4,9 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { onlineUntilFromNow } from "@/lib/presence";
 
 const COOKIE_NAME = "blink_session";
-// Keep the login across browser and installed-PWA restarts. The app refreshes
-// this cookie whenever an authenticated user opens Blink.
-const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 400;
+// The account itself is removed after one year of inactivity, so a rolling
+// one-year cookie keeps active users signed in without outliving that policy.
+const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 365;
 
 function getSecret() {
   const secret = process.env.AUTH_SECRET;
@@ -24,13 +24,19 @@ export async function createSession(userId: string) {
     .setExpirationTime(`${SESSION_DURATION_SECONDS}s`)
     .sign(getSecret());
 
+  const expires = new Date(Date.now() + SESSION_DURATION_SECONDS * 1000);
   const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    // Lax is required for installed-PWA and home-screen launches. Android can
+    // treat those launches as external top-level navigations; Strict cookies
+    // may be omitted on that first request even though the user never signed out.
+    sameSite: "lax",
     path: "/",
-    maxAge: SESSION_DURATION_SECONDS
+    maxAge: SESSION_DURATION_SECONDS,
+    expires,
+    priority: "high"
   });
 }
 
@@ -56,9 +62,11 @@ export async function clearSession() {
   cookieStore.set(COOKIE_NAME, "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: "lax",
     path: "/",
-    expires: new Date(0)
+    maxAge: 0,
+    expires: new Date(0),
+    priority: "high"
   });
 }
 

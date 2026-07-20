@@ -1,9 +1,10 @@
-const CACHE_NAME = "blink-static-v6";
+const CACHE_NAME = "blink-static-v8";
 const STATIC_ASSETS = [
   "/manifest.webmanifest",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
   "/icons/icon-maskable-512.png",
+  "/icons/notification-badge.png",
   "/sounds/blink.wav"
 ];
 
@@ -89,7 +90,7 @@ self.addEventListener("push", (event) => {
     await self.registration.showNotification(payload.title || "Blink", {
       body: payload.body || "You received a new message",
       icon: "/icons/icon-192.png",
-      badge: "/icons/icon-192.png",
+      badge: "/icons/notification-badge.png",
       tag: payload.tag || `blink-message-${Date.now()}`,
       renotify: true,
       silent: false,

@@ -286,3 +286,39 @@ textarea:-webkit-autofill:focus {
   }
 }
 .focus-border-accent:focus { border-color: var(--line-strong); }
+
+/* Landing-page viewport protection for narrow phones and enlarged system text. */
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.landing-shell,
+.landing-copy,
+.landing-title,
+.landing-description {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.landing-title {
+  font-size: clamp(2rem, 9.4vw, 3rem);
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.landing-description {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 380px) {
+  .landing-title {
+    font-size: clamp(1.75rem, 9vw, 2.15rem);
+    letter-spacing: -0.025em;
+    line-height: 1.08;
+  }
+}
